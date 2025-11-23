@@ -1,0 +1,321 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ServiceHp;
+use App\Models\Cabang;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Carbon\Carbon;
+
+class ServiceHpController extends Controller
+{
+    /**
+     * Display a listing of service hp
+     */
+    public function index()
+    {
+        $cabangId = Auth::user()->cabang_id;
+        
+        $services = ServiceHp::with(['cabang', 'teknisi', 'kasir'])
+            ->where('cabang_id', $cabangId)
+            ->latest()
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'nomor_service' => $service->nomor_service,
+                    'tanggal_masuk' => $service->tanggal_masuk,
+                    'nama_pelanggan' => $service->nama_pelanggan,
+                    'telepon_pelanggan' => $service->telepon_pelanggan,
+                    'merk_hp' => $service->merk_hp,
+                    'tipe_hp' => $service->tipe_hp,
+                    'keluhan' => $service->keluhan,
+                    'total_biaya' => $service->total_biaya,
+                    'status_service' => $service->status_service,
+                    'teknisi' => $service->teknisi ? $service->teknisi->name : '-',
+                    'tanggal_selesai' => $service->tanggal_selesai,
+                    'tanggal_diambil' => $service->tanggal_diambil,
+                ];
+            });
+
+        // Stats
+        $stats = [
+            'total' => ServiceHp::where('cabang_id', $cabangId)->count(),
+            'diterima' => ServiceHp::where('cabang_id', $cabangId)->where('status_service', 'diterima')->count(),
+            'dikerjakan' => ServiceHp::where('cabang_id', $cabangId)->whereIn('status_service', ['dicek', 'dikerjakan'])->count(),
+            'selesai' => ServiceHp::where('cabang_id', $cabangId)->where('status_service', 'selesai')->count(),
+        ];
+
+        return Inertia::render('service-hp/index', [
+            'services' => $services,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new service
+     */
+    public function create()
+    {
+        $user = Auth::user();
+        $cabangId = $user->cabang_id;
+        $cabang = Cabang::find($cabangId);
+        
+        $teknisi = User::where('cabang_id', $cabangId)->get();
+
+        return Inertia::render('service-hp/create', [
+            'teknisi' => $teknisi,
+            'cabang_nama' => $cabang ? $cabang->nama_cabang : 'Toko',
+            'cabang_alamat' => $cabang ? $cabang->alamat : '',
+            'cabang_telepon' => $cabang ? $cabang->telepon : '',
+        ]);
+    }
+
+    /**
+     * Store a newly created service
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'tanggal_masuk' => 'required|date',
+            'nama_pelanggan' => 'required|string|max:100',
+            'telepon_pelanggan' => 'required|string|max:20',
+            'merk_hp' => 'required|string|max:50',
+            'tipe_hp' => 'required|string|max:50',
+            'imei' => 'nullable|string|max:20',
+            'keluhan' => 'required|string',
+            'kerusakan' => 'nullable|string',
+            'spare_part_diganti' => 'nullable|string',
+            'biaya_spare_part' => 'nullable|integer|min:0',
+            'biaya_jasa' => 'nullable|integer|min:0',
+            'teknisi_id' => 'nullable|exists:users,id',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $cabangId = Auth::user()->cabang_id;
+        $nomorService = $this->generateNomorService();
+
+        $biayaSparePart = $request->biaya_spare_part ?? 0;
+        $biayaJasa = $request->biaya_jasa ?? 0;
+        $totalBiaya = $biayaSparePart + $biayaJasa;
+
+        $service = ServiceHp::create([
+            'nomor_service' => $nomorService,
+            'tanggal_masuk' => $request->tanggal_masuk,
+            'cabang_id' => $cabangId,
+            'nama_pelanggan' => $request->nama_pelanggan,
+            'telepon_pelanggan' => $request->telepon_pelanggan,
+            'merk_hp' => $request->merk_hp,
+            'tipe_hp' => $request->tipe_hp,
+            'imei' => $request->imei,
+            'keluhan' => $request->keluhan,
+            'kerusakan' => $request->kerusakan,
+            'spare_part_diganti' => $request->spare_part_diganti,
+            'biaya_spare_part' => $biayaSparePart,
+            'biaya_jasa' => $biayaJasa,
+            'total_biaya' => $totalBiaya,
+            'status_service' => 'diterima',
+            'teknisi_id' => $request->teknisi_id,
+            'kasir_id' => Auth::id(),
+            'keterangan' => $request->keterangan,
+        ]);
+
+        // Load teknisi relation
+        $service->load('teknisi');
+
+        // Check if request wants JSON response (for AJAX)
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data service berhasil ditambahkan',
+                'data' => [
+                    'id' => $service->id,
+                    'nomor_service' => $service->nomor_service,
+                    'tanggal_masuk' => $service->tanggal_masuk,
+                    'nama_pelanggan' => $service->nama_pelanggan,
+                    'telepon_pelanggan' => $service->telepon_pelanggan,
+                    'merk_hp' => $service->merk_hp,
+                    'tipe_hp' => $service->tipe_hp,
+                    'keluhan' => $service->keluhan,
+                    'spare_part_diganti' => $service->spare_part_diganti,
+                    'biaya_spare_part' => $service->biaya_spare_part,
+                    'biaya_jasa' => $service->biaya_jasa,
+                    'total_biaya' => $service->total_biaya,
+                    'teknisi' => $service->teknisi ? $service->teknisi->name : '-',
+                    'kasir' => Auth::user()->name,
+                ],
+            ]);
+        }
+
+        return redirect()->route('service.index')
+            ->with('success', 'Data service berhasil ditambahkan');
+    }
+
+    /**
+     * Show the form for editing the specified service
+     */
+    public function edit($id)
+    {
+        $serviceHp = ServiceHp::findOrFail($id);
+        $user = Auth::user();
+        $cabangId = $user->cabang_id;
+        $cabang = Cabang::find($cabangId);
+        
+        $teknisi = User::where('cabang_id', $cabangId)->get();
+
+        return Inertia::render('service-hp/edit', [
+            'service' => $serviceHp,
+            'teknisi' => $teknisi,
+            'cabang_nama' => $cabang ? $cabang->nama_cabang : 'Toko',
+            'cabang_alamat' => $cabang ? $cabang->alamat : '',
+            'cabang_telepon' => $cabang ? $cabang->telepon : '',
+        ]);
+    }
+
+    /**
+     * Update the specified service
+     */
+    public function update(Request $request, $id)
+    {
+        $serviceHp = ServiceHp::findOrFail($id);
+        
+        // Check if this is a partial update (e.g., only status change)
+        if ($request->has('status_service') && count($request->all()) === 1) {
+            $request->validate([
+                'status_service' => 'required|in:diterima,dicek,dikerjakan,selesai,diambil,batal',
+            ]);
+            
+            $serviceHp->update([
+                'status_service' => $request->status_service,
+            ]);
+            
+            if ($request->wantsJson() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Status berhasil diubah',
+                ]);
+            }
+            
+            return redirect()->route('service.index')
+                ->with('success', 'Status berhasil diubah');
+        }
+        
+        // Full update validation
+        $request->validate([
+            'tanggal_masuk' => 'required|date',
+            'nama_pelanggan' => 'required|string|max:100',
+            'telepon_pelanggan' => 'required|string|max:20',
+            'merk_hp' => 'required|string|max:50',
+            'tipe_hp' => 'required|string|max:50',
+            'imei' => 'nullable|string|max:20',
+            'keluhan' => 'required|string',
+            'kerusakan' => 'nullable|string',
+            'spare_part_diganti' => 'nullable|string',
+            'biaya_spare_part' => 'nullable|integer|min:0',
+            'biaya_jasa' => 'nullable|integer|min:0',
+            'status_service' => 'required|in:diterima,dicek,dikerjakan,selesai,diambil,batal',
+            'teknisi_id' => 'nullable|exists:users,id',
+            'tanggal_selesai' => 'nullable|date',
+            'tanggal_diambil' => 'nullable|date',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        $biayaSparePart = $request->biaya_spare_part ?? 0;
+        $biayaJasa = $request->biaya_jasa ?? 0;
+        $totalBiaya = $biayaSparePart + $biayaJasa;
+
+        $serviceHp->update([
+            'tanggal_masuk' => $request->tanggal_masuk,
+            'nama_pelanggan' => $request->nama_pelanggan,
+            'telepon_pelanggan' => $request->telepon_pelanggan,
+            'merk_hp' => $request->merk_hp,
+            'tipe_hp' => $request->tipe_hp,
+            'imei' => $request->imei,
+            'keluhan' => $request->keluhan,
+            'kerusakan' => $request->kerusakan,
+            'spare_part_diganti' => $request->spare_part_diganti,
+            'biaya_spare_part' => $biayaSparePart,
+            'biaya_jasa' => $biayaJasa,
+            'total_biaya' => $totalBiaya,
+            'status_service' => $request->status_service,
+            'teknisi_id' => $request->teknisi_id,
+            'tanggal_selesai' => $request->tanggal_selesai,
+            'tanggal_diambil' => $request->tanggal_diambil,
+            'keterangan' => $request->keterangan,
+        ]);
+
+        return redirect()->route('service.index')
+            ->with('success', 'Data service berhasil diupdate');
+    }
+
+    /**
+     * Remove the specified service
+     */
+    public function destroy($id)
+    {
+        $serviceHp = ServiceHp::findOrFail($id);
+        $serviceHp->delete();
+
+        return redirect()->route('service.index')
+            ->with('success', 'Data service berhasil dihapus');
+    }
+
+    /**
+     * Get service detail for print
+     */
+    public function detail($id)
+    {
+        $serviceHp = ServiceHp::with(['cabang', 'teknisi'])->findOrFail($id);
+        
+        return response()->json([
+            'id' => $serviceHp->id,
+            'nomor_service' => $serviceHp->nomor_service,
+            'tanggal_masuk' => $serviceHp->tanggal_masuk,
+            'nama_pelanggan' => $serviceHp->nama_pelanggan,
+            'telepon_pelanggan' => $serviceHp->telepon_pelanggan,
+            'merk_hp' => $serviceHp->merk_hp,
+            'tipe_hp' => $serviceHp->tipe_hp,
+            'imei' => $serviceHp->imei,
+            'keluhan' => $serviceHp->keluhan,
+            'kerusakan' => $serviceHp->kerusakan,
+            'spare_part_diganti' => $serviceHp->spare_part_diganti,
+            'biaya_spare_part' => $serviceHp->biaya_spare_part,
+            'biaya_jasa' => $serviceHp->biaya_jasa,
+            'total_biaya' => $serviceHp->total_biaya,
+            'status_service' => $serviceHp->status_service,
+            'teknisi' => $serviceHp->teknisi ? $serviceHp->teknisi->name : null,
+            'tanggal_selesai' => $serviceHp->tanggal_selesai,
+            'tanggal_diambil' => $serviceHp->tanggal_diambil,
+            'keterangan' => $serviceHp->keterangan,
+            'cabang_nama' => $serviceHp->cabang->nama_cabang,
+            'cabang_alamat' => $serviceHp->cabang->alamat,
+            'cabang_telepon' => $serviceHp->cabang->telepon,
+        ]);
+    }
+
+    /**
+     * Generate nomor service format: SRV-YYYYMMDD-XXXX
+     */
+    private function generateNomorService()
+    {
+        $prefix = 'SRV-' . date('Ymd') . '-';
+        
+        $lastService = ServiceHp::where('nomor_service', 'LIKE', $prefix . '%')
+            ->orderBy('nomor_service', 'desc')
+            ->first();
+        
+        if ($lastService) {
+            preg_match('/-(\d+)$/', $lastService->nomor_service, $matches);
+            $lastNumber = isset($matches[1]) ? (int)$matches[1] : 0;
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        
+        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+}
