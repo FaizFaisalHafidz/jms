@@ -1,3 +1,4 @@
+import { BarcodeCameraScanner } from '@/components/barcode-camera-scanner';
 import { Heading } from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,7 +31,7 @@ import {
     ShoppingCart,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Barang {
@@ -102,18 +103,17 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
     const [keterangan, setKeterangan] = useState('');
 
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSearchRef = useRef<string>('');
 
     useEffect(() => {
         searchInputRef.current?.focus();
     }, []);
 
-    const handleSearch = async (value: string) => {
-        setKeyword(value);
-        if (value.length < 2) {
-            setSearchResults([]);
-            setShowResults(false);
-            return;
-        }
+    const performSearch = async (value: string) => {
+        // Prevent duplicate searches
+        if (lastSearchRef.current === value) return;
+        lastSearchRef.current = value;
 
         try {
             const response = await axios.post('/pos/search-barang', {
@@ -125,6 +125,33 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
             console.error('Search error:', error);
         }
     };
+
+    const handleSearch = useCallback(async (value: string, immediate: boolean = false) => {
+        // Clear previous timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        setKeyword(value);
+        
+        if (value.length < 2) {
+            setSearchResults([]);
+            setShowResults(false);
+            lastSearchRef.current = '';
+            return;
+        }
+
+        // If immediate (from barcode scanner), search right away
+        if (immediate) {
+            performSearch(value);
+            return;
+        }
+
+        // Otherwise debounce for manual typing
+        searchTimeoutRef.current = setTimeout(() => {
+            performSearch(value);
+        }, 300);
+    }, []);
 
     const handleSelectBarang = (
         barang: Barang,
@@ -449,15 +476,20 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                         {/* Search Bar */}
                         <Card>
                             <CardContent className="pt-6">
-                                <div className="relative">
-                                    <Scan className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                                    <Input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        placeholder="Scan barcode atau ketik kode/nama barang..."
-                                        value={keyword}
-                                        onChange={(e) => handleSearch(e.target.value)}
-                                        className="pl-10 text-lg h-12"
+                                <div className="flex gap-2">
+                                    <div className="relative flex-1">
+                                        <Scan className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                                        <Input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            placeholder="Scan barcode atau ketik kode/nama barang..."
+                                            value={keyword}
+                                            onChange={(e) => handleSearch(e.target.value, false)}
+                                            className="pl-10 text-lg h-12"
+                                        />
+                                    </div>
+                                    <BarcodeCameraScanner 
+                                        onScanSuccess={(barcode) => handleSearch(barcode, true)}
                                     />
                                 </div>
 
