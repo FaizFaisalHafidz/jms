@@ -80,6 +80,8 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
         keluhan: '',
         kerusakan: '',
         spare_part_diganti: '',
+        barang_id: null as number | null,
+        jumlah_barang: null as number | null,
         biaya_spare_part: 0,
         biaya_jasa: 0,
         teknisi_id: '',
@@ -150,8 +152,16 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
         const totalBiaya = parts.reduce((sum, part) => sum + (part.biaya || 0), 0);
         const partNames = parts.map(p => p.nama).filter(n => n).join(', ');
         
-        setData('biaya_spare_part', totalBiaya);
-        setData('spare_part_diganti', partNames);
+        // Ambil barang pertama yang dari inventory (dari_barang = true)
+        const barangDariInventory = parts.find(p => p.dari_barang && p.barang_id);
+        
+        setData({
+            ...data,
+            biaya_spare_part: totalBiaya,
+            spare_part_diganti: partNames,
+            barang_id: barangDariInventory?.barang_id || null,
+            jumlah_barang: barangDariInventory ? 1 : null,
+        });
     };
 
     const handleSubmit: FormEventHandler = (e) => {

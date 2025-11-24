@@ -21,6 +21,8 @@ class ServiceHp extends Model
         'keluhan',
         'kerusakan',
         'spare_part_diganti',
+        'barang_id',
+        'jumlah_barang',
         'biaya_spare_part',
         'biaya_jasa',
         'total_biaya',
@@ -46,6 +48,11 @@ class ServiceHp extends Model
     public function cabang(): BelongsTo
     {
         return $this->belongsTo(Cabang::class);
+    }
+
+    public function barang(): BelongsTo
+    {
+        return $this->belongsTo(Barang::class);
     }
 
     public function teknisi(): BelongsTo
