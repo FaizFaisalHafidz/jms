@@ -1,10 +1,15 @@
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/react';
+import axios from 'axios';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
+
+// Configure axios defaults
+axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+axios.defaults.withCredentials = true;
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

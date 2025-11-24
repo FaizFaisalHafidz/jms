@@ -67,13 +67,14 @@ export default function ServiceHpTable({ services }: Props) {
     const handleDelete = async (id: number, nomorService: string) => {
         if (!confirm(`Hapus service ${nomorService}?`)) return;
 
-        try {
-            await axios.delete(`/service/${id}`);
-            toast.success('Service berhasil dihapus');
-            router.reload();
-        } catch (error) {
-            toast.error('Gagal menghapus service');
-        }
+        router.delete(`/service/${id}`, {
+            onSuccess: () => {
+                toast.success('Service berhasil dihapus');
+            },
+            onError: () => {
+                toast.error('Gagal menghapus service');
+            },
+        });
     };
 
     const handleStatusChange = async (id: number, newStatus: string) => {
@@ -134,6 +135,7 @@ export default function ServiceHpTable({ services }: Props) {
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
+                <div class="center bold" style="font-size: 14px; margin-bottom: 2px;">JAYA MAKMUR SPAREPART</div>
                 <div class="center bold" style="font-size: 13px;">Cabang ${selectedService.cabang_nama}</div>
                 ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 9px;">${selectedService.cabang_alamat}</div>` : ''}
                 ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 9px; margin-bottom: 5px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}

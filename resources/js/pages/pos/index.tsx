@@ -351,6 +351,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
+                <div class="center bold" style="font-size: 14px; margin-bottom: 2px;">JAYA MAKMUR SPAREPART</div>
                 <div class="center bold" style="font-size: 13px;">Cabang ${cabang_nama}</div>
                 <div class="center" style="font-size: 9px;">${cabang_alamat || '-'}</div>
                 <div class="center" style="font-size: 9px; margin-bottom: 5px;">Telp: ${cabang_telepon || '-'}</div>

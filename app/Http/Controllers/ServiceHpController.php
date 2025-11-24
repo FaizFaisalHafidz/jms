@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ServiceHp;
 use App\Models\Cabang;
 use App\Models\User;
+use App\Models\Barang;
+use App\Models\StokCabang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -94,65 +96,98 @@ class ServiceHpController extends Controller
             'biaya_jasa' => 'nullable|integer|min:0',
             'teknisi_id' => 'nullable|exists:users,id',
             'keterangan' => 'nullable|string',
+            'barang_id' => 'nullable|exists:barang,id',
+            'jumlah_barang' => 'nullable|integer|min:1',
         ]);
 
-        $cabangId = Auth::user()->cabang_id;
-        $nomorService = $this->generateNomorService();
+        DB::beginTransaction();
+        try {
+            $cabangId = Auth::user()->cabang_id;
+            $nomorService = $this->generateNomorService();
 
-        $biayaSparePart = $request->biaya_spare_part ?? 0;
-        $biayaJasa = $request->biaya_jasa ?? 0;
-        $totalBiaya = $biayaSparePart + $biayaJasa;
+            $biayaSparePart = $request->biaya_spare_part ?? 0;
+            $biayaJasa = $request->biaya_jasa ?? 0;
+            $totalBiaya = $biayaSparePart + $biayaJasa;
 
-        $service = ServiceHp::create([
-            'nomor_service' => $nomorService,
-            'tanggal_masuk' => $request->tanggal_masuk,
-            'cabang_id' => $cabangId,
-            'nama_pelanggan' => $request->nama_pelanggan,
-            'telepon_pelanggan' => $request->telepon_pelanggan,
-            'merk_hp' => $request->merk_hp,
-            'tipe_hp' => $request->tipe_hp,
-            'imei' => $request->imei,
-            'keluhan' => $request->keluhan,
-            'kerusakan' => $request->kerusakan,
-            'spare_part_diganti' => $request->spare_part_diganti,
-            'biaya_spare_part' => $biayaSparePart,
-            'biaya_jasa' => $biayaJasa,
-            'total_biaya' => $totalBiaya,
-            'status_service' => 'diterima',
-            'teknisi_id' => $request->teknisi_id,
-            'kasir_id' => Auth::id(),
-            'keterangan' => $request->keterangan,
-        ]);
+            // Jika menggunakan barang dari inventory, kurangi stok
+            if ($request->barang_id && $request->jumlah_barang) {
+                $stokCabang = StokCabang::where('cabang_id', $cabangId)
+                    ->where('barang_id', $request->barang_id)
+                    ->first();
 
-        // Load teknisi relation
-        $service->load('teknisi');
+                if (!$stokCabang || $stokCabang->jumlah_stok < $request->jumlah_barang) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stok barang tidak mencukupi',
+                    ], 400);
+                }
 
-        // Check if request wants JSON response (for AJAX)
-        if ($request->wantsJson() || $request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data service berhasil ditambahkan',
-                'data' => [
-                    'id' => $service->id,
-                    'nomor_service' => $service->nomor_service,
-                    'tanggal_masuk' => $service->tanggal_masuk,
-                    'nama_pelanggan' => $service->nama_pelanggan,
-                    'telepon_pelanggan' => $service->telepon_pelanggan,
-                    'merk_hp' => $service->merk_hp,
-                    'tipe_hp' => $service->tipe_hp,
-                    'keluhan' => $service->keluhan,
-                    'spare_part_diganti' => $service->spare_part_diganti,
-                    'biaya_spare_part' => $service->biaya_spare_part,
-                    'biaya_jasa' => $service->biaya_jasa,
-                    'total_biaya' => $service->total_biaya,
-                    'teknisi' => $service->teknisi ? $service->teknisi->name : '-',
-                    'kasir' => Auth::user()->name,
-                ],
+                // Kurangi stok
+                $stokCabang->decrement('jumlah_stok', $request->jumlah_barang);
+            }
+
+            $service = ServiceHp::create([
+                'nomor_service' => $nomorService,
+                'tanggal_masuk' => $request->tanggal_masuk,
+                'cabang_id' => $cabangId,
+                'nama_pelanggan' => $request->nama_pelanggan,
+                'telepon_pelanggan' => $request->telepon_pelanggan,
+                'merk_hp' => $request->merk_hp,
+                'tipe_hp' => $request->tipe_hp,
+                'imei' => $request->imei,
+                'keluhan' => $request->keluhan,
+                'kerusakan' => $request->kerusakan,
+                'spare_part_diganti' => $request->spare_part_diganti,
+                'barang_id' => $request->barang_id,
+                'jumlah_barang' => $request->jumlah_barang,
+                'biaya_spare_part' => $biayaSparePart,
+                'biaya_jasa' => $biayaJasa,
+                'total_biaya' => $totalBiaya,
+                'status_service' => 'diterima',
+                'teknisi_id' => $request->teknisi_id,
+                'kasir_id' => Auth::id(),
+                'keterangan' => $request->keterangan,
             ]);
-        }
 
-        return redirect()->route('service.index')
-            ->with('success', 'Data service berhasil ditambahkan');
+            DB::commit();
+
+            // Load teknisi relation
+            $service->load('teknisi');
+
+            // Check if request wants JSON response (for AJAX)
+            if ($request->wantsJson() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data service berhasil ditambahkan',
+                    'data' => [
+                        'id' => $service->id,
+                        'nomor_service' => $service->nomor_service,
+                        'tanggal_masuk' => $service->tanggal_masuk,
+                        'nama_pelanggan' => $service->nama_pelanggan,
+                        'telepon_pelanggan' => $service->telepon_pelanggan,
+                        'merk_hp' => $service->merk_hp,
+                        'tipe_hp' => $service->tipe_hp,
+                        'keluhan' => $service->keluhan,
+                        'spare_part_diganti' => $service->spare_part_diganti,
+                        'biaya_spare_part' => $service->biaya_spare_part,
+                        'biaya_jasa' => $service->biaya_jasa,
+                        'total_biaya' => $service->total_biaya,
+                        'teknisi' => $service->teknisi ? $service->teknisi->name : '-',
+                        'kasir' => Auth::user()->name,
+                    ],
+                ]);
+            }
+
+            return redirect()->route('service.index')
+                ->with('success', 'Data service berhasil ditambahkan');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -222,34 +257,85 @@ class ServiceHpController extends Controller
             'tanggal_selesai' => 'nullable|date',
             'tanggal_diambil' => 'nullable|date',
             'keterangan' => 'nullable|string',
+            'barang_id' => 'nullable|exists:barang,id',
+            'jumlah_barang' => 'nullable|integer|min:1',
         ]);
 
-        $biayaSparePart = $request->biaya_spare_part ?? 0;
-        $biayaJasa = $request->biaya_jasa ?? 0;
-        $totalBiaya = $biayaSparePart + $biayaJasa;
+        DB::beginTransaction();
+        try {
+            $cabangId = Auth::user()->cabang_id;
 
-        $serviceHp->update([
-            'tanggal_masuk' => $request->tanggal_masuk,
-            'nama_pelanggan' => $request->nama_pelanggan,
-            'telepon_pelanggan' => $request->telepon_pelanggan,
-            'merk_hp' => $request->merk_hp,
-            'tipe_hp' => $request->tipe_hp,
-            'imei' => $request->imei,
-            'keluhan' => $request->keluhan,
-            'kerusakan' => $request->kerusakan,
-            'spare_part_diganti' => $request->spare_part_diganti,
-            'biaya_spare_part' => $biayaSparePart,
-            'biaya_jasa' => $biayaJasa,
-            'total_biaya' => $totalBiaya,
-            'status_service' => $request->status_service,
-            'teknisi_id' => $request->teknisi_id,
-            'tanggal_selesai' => $request->tanggal_selesai,
-            'tanggal_diambil' => $request->tanggal_diambil,
-            'keterangan' => $request->keterangan,
-        ]);
+            // Handle stok changes jika barang berubah
+            $oldBarangId = $serviceHp->barang_id;
+            $oldJumlah = $serviceHp->jumlah_barang;
+            $newBarangId = $request->barang_id;
+            $newJumlah = $request->jumlah_barang;
 
-        return redirect()->route('service.index')
-            ->with('success', 'Data service berhasil diupdate');
+            // Restore stok lama jika ada
+            if ($oldBarangId && $oldJumlah) {
+                $oldStok = StokCabang::where('cabang_id', $cabangId)
+                    ->where('barang_id', $oldBarangId)
+                    ->first();
+                
+                if ($oldStok) {
+                    $oldStok->increment('jumlah_stok', $oldJumlah);
+                }
+            }
+
+            // Kurangi stok baru jika ada
+            if ($newBarangId && $newJumlah) {
+                $newStok = StokCabang::where('cabang_id', $cabangId)
+                    ->where('barang_id', $newBarangId)
+                    ->first();
+
+                if (!$newStok || $newStok->jumlah_stok < $newJumlah) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Stok barang tidak mencukupi',
+                    ], 400);
+                }
+
+                $newStok->decrement('jumlah_stok', $newJumlah);
+            }
+
+            $biayaSparePart = $request->biaya_spare_part ?? 0;
+            $biayaJasa = $request->biaya_jasa ?? 0;
+            $totalBiaya = $biayaSparePart + $biayaJasa;
+
+            $serviceHp->update([
+                'tanggal_masuk' => $request->tanggal_masuk,
+                'nama_pelanggan' => $request->nama_pelanggan,
+                'telepon_pelanggan' => $request->telepon_pelanggan,
+                'merk_hp' => $request->merk_hp,
+                'tipe_hp' => $request->tipe_hp,
+                'imei' => $request->imei,
+                'keluhan' => $request->keluhan,
+                'kerusakan' => $request->kerusakan,
+                'spare_part_diganti' => $request->spare_part_diganti,
+                'barang_id' => $newBarangId,
+                'jumlah_barang' => $newJumlah,
+                'biaya_spare_part' => $biayaSparePart,
+                'biaya_jasa' => $biayaJasa,
+                'total_biaya' => $totalBiaya,
+                'status_service' => $request->status_service,
+                'teknisi_id' => $request->teknisi_id,
+                'tanggal_selesai' => $request->tanggal_selesai,
+                'tanggal_diambil' => $request->tanggal_diambil,
+                'keterangan' => $request->keterangan,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('service.index')
+                ->with('success', 'Data service berhasil diupdate');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -257,11 +343,33 @@ class ServiceHpController extends Controller
      */
     public function destroy($id)
     {
-        $serviceHp = ServiceHp::findOrFail($id);
-        $serviceHp->delete();
+        DB::beginTransaction();
+        try {
+            $serviceHp = ServiceHp::findOrFail($id);
+            $cabangId = Auth::user()->cabang_id;
 
-        return redirect()->route('service.index')
-            ->with('success', 'Data service berhasil dihapus');
+            // Restore stok jika service ini pakai barang dari inventory
+            if ($serviceHp->barang_id && $serviceHp->jumlah_barang) {
+                $stokCabang = StokCabang::where('cabang_id', $cabangId)
+                    ->where('barang_id', $serviceHp->barang_id)
+                    ->first();
+                
+                if ($stokCabang) {
+                    $stokCabang->increment('jumlah_stok', $serviceHp->jumlah_barang);
+                }
+            }
+
+            $serviceHp->delete();
+
+            DB::commit();
+
+            return redirect()->route('service.index')
+                ->with('success', 'Data service berhasil dihapus');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('service.index')
+                ->with('error', 'Gagal menghapus service: ' . $e->getMessage());
+        }
     }
 
     /**
