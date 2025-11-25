@@ -21,14 +21,14 @@ export default function PembelianStats({ stats }: Props) {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Pembelian</CardTitle>
           <ShoppingCart className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(stats.total_pembelian)}</div>
+          <div className="text-xl md:text-2xl font-bold">{formatCurrency(stats.total_pembelian)}</div>
         </CardContent>
       </Card>
 

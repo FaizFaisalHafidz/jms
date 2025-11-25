@@ -30,10 +30,15 @@ class LaporanLabaRugiController extends Controller
             $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
         }
 
-        // Pendapatan
+        // Pendapatan dari Penjualan
         $penjualan = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
             ->sum('total_bayar');
+        
+        // Laba Kotor dari Penjualan (sudah dihitung saat transaksi)
+        $labaKotorPenjualan = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->sum('total_laba');
 
+        // Pendapatan dari Service
         $service = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
@@ -43,7 +48,19 @@ class LaporanLabaRugiController extends Controller
                       });
             })
             ->sum('total_biaya');
+        
+        // Laba dari Service (sudah dikurangi modal spare part jika pakai inventory)
+        $labaService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function($q) use ($startDate, $endDate) {
+                          $q->whereNull('tanggal_selesai')
+                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
+                      });
+            })
+            ->sum('laba_service');
 
+        // Retur penjualan (pengurang pendapatan)
         $retur = ReturPenjualan::where('status_retur', 'disetujui')
             ->where('jenis_retur', 'uang_kembali')
             ->whereBetween('tanggal_retur', [$startDate, $endDate])
@@ -51,17 +68,12 @@ class LaporanLabaRugiController extends Controller
 
         $totalPendapatan = $penjualan + $service - $retur;
 
-        // Pengeluaran
-        $pembelian = Pembelian::whereBetween('tanggal_pembelian', [$startDate, $endDate])
-            ->sum('total_bayar');
-
+        // Biaya Operasional (tidak termasuk pembelian barang)
         $biayaOperasional = Pengeluaran::whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
             ->sum('jumlah');
 
-        $totalPengeluaran = $pembelian + $biayaOperasional;
-
-        // Laba/Rugi
-        $labaRugi = $totalPendapatan - $totalPengeluaran;
+        // Laba Bersih = Laba Kotor Penjualan + Laba Service - Biaya Operasional - Retur
+        $labaBersih = $labaKotorPenjualan + $labaService - $biayaOperasional - $retur;
 
         // Laba per Cabang
         $labaPerCabang = Cabang::where('status_aktif', true)
@@ -70,6 +82,10 @@ class LaporanLabaRugiController extends Controller
                 $penjualanCabang = Transaksi::where('cabang_id', $cabang->id)
                     ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
                     ->sum('total_bayar');
+                
+                $labaKotorCabang = Transaksi::where('cabang_id', $cabang->id)
+                    ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
+                    ->sum('total_laba');
 
                 $serviceCabang = ServiceHp::where('cabang_id', $cabang->id)
                     ->whereIn('status_service', ['selesai', 'diambil'])
@@ -88,24 +104,20 @@ class LaporanLabaRugiController extends Controller
                     ->whereBetween('tanggal_retur', [$startDate, $endDate])
                     ->sum('total_nilai_retur');
 
-                $pembelianCabang = Pembelian::where('cabang_id', $cabang->id)
-                    ->whereBetween('tanggal_pembelian', [$startDate, $endDate])
-                    ->sum('total_bayar');
-
                 $pengeluaranCabang = Pengeluaran::where('cabang_id', $cabang->id)
                     ->whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
                     ->sum('jumlah');
 
                 $pendapatan = $penjualanCabang + $serviceCabang - $returCabang;
-                $pengeluaran = $pembelianCabang + $pengeluaranCabang;
-                $laba = $pendapatan - $pengeluaran;
+                $labaBersih = $labaKotorCabang + $serviceCabang - $pengeluaranCabang - $returCabang;
 
                 return [
                     'nama_cabang' => $cabang->nama_cabang,
                     'kota' => $cabang->kota,
                     'pendapatan' => $pendapatan,
-                    'pengeluaran' => $pengeluaran,
-                    'laba_rugi' => $laba,
+                    'laba_kotor' => $labaKotorCabang,
+                    'biaya_operasional' => $pengeluaranCabang,
+                    'laba_bersih' => $labaBersih,
                 ];
             });
 
@@ -116,21 +128,20 @@ class LaporanLabaRugiController extends Controller
             $dayStart = $currentDate->copy()->startOfDay();
             $dayEnd = $currentDate->copy()->endOfDay();
 
-            $dayPenjualan = Transaksi::whereBetween('tanggal_transaksi', [$dayStart, $dayEnd])->sum('total_bayar');
+            $dayLabaKotor = Transaksi::whereBetween('tanggal_transaksi', [$dayStart, $dayEnd])->sum('total_laba');
             $dayService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
                 ->whereBetween('tanggal_masuk', [$dayStart, $dayEnd])
                 ->sum('total_biaya');
-            $dayPembelian = Pembelian::whereBetween('tanggal_pembelian', [$dayStart, $dayEnd])->sum('total_bayar');
             $dayPengeluaran = Pengeluaran::whereBetween('tanggal_pengeluaran', [$dayStart, $dayEnd])->sum('jumlah');
 
-            $dayPendapatan = $dayPenjualan + $dayService;
-            $dayTotal = $dayPendapatan - $dayPembelian - $dayPengeluaran;
+            $dayLabaBersih = $dayLabaKotor + $dayService - $dayPengeluaran;
 
             $grafikLaba[] = [
                 'tanggal' => $currentDate->format('Y-m-d'),
-                'pendapatan' => $dayPendapatan,
-                'pengeluaran' => $dayPembelian + $dayPengeluaran,
-                'laba' => $dayTotal,
+                'laba_kotor' => $dayLabaKotor,
+                'pendapatan_service' => $dayService,
+                'biaya_operasional' => $dayPengeluaran,
+                'laba_bersih' => $dayLabaBersih,
             ];
 
             $currentDate->addDay();
@@ -154,10 +165,10 @@ class LaporanLabaRugiController extends Controller
                 'service' => $service,
                 'retur' => $retur,
                 'total_pendapatan' => $totalPendapatan,
-                'pembelian' => $pembelian,
+                'laba_kotor_penjualan' => $labaKotorPenjualan,
+                'laba_service' => $labaService,
                 'biaya_operasional' => $biayaOperasional,
-                'total_pengeluaran' => $totalPengeluaran,
-                'laba_rugi' => $labaRugi,
+                'laba_bersih' => $labaBersih,
             ],
             'laba_per_cabang' => $labaPerCabang,
             'grafik_laba' => $grafikLaba,

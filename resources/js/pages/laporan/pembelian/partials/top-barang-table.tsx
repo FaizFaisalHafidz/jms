@@ -23,17 +23,19 @@ export default function TopBarangTable({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top 10 Barang Terbeli</CardTitle>
-        <CardDescription>Barang yang paling banyak dibeli</CardDescription>
+        <CardTitle className="text-lg md:text-xl">Top 10 Barang Terbeli</CardTitle>
+        <CardDescription className="text-sm">Barang yang paling banyak dibeli</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="overflow-x-auto -mx-6 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12">#</TableHead>
-              <TableHead>Nama Barang</TableHead>
-              <TableHead className="text-right">Total Dibeli</TableHead>
-              <TableHead className="text-right">Total Nilai</TableHead>
+              <TableHead className="w-12 text-xs md:text-sm">#</TableHead>
+              <TableHead className="text-xs md:text-sm">Nama Barang</TableHead>
+              <TableHead className="text-right text-xs md:text-sm">Total Dibeli</TableHead>
+              <TableHead className="text-right text-xs md:text-sm">Total Nilai</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -41,20 +43,22 @@ export default function TopBarangTable({ data }: Props) {
               <TableRow key={index}>
                 <TableCell>
                   {index < 3 ? (
-                    <Badge variant={index === 0 ? "default" : index === 1 ? "secondary" : "outline"}>
+                    <Badge variant={index === 0 ? "default" : index === 1 ? "secondary" : "outline"} className="text-xs">
                       {index + 1}
                     </Badge>
                   ) : (
-                    <span className="text-muted-foreground">{index + 1}</span>
+                    <span className="text-muted-foreground text-xs md:text-sm">{index + 1}</span>
                   )}
                 </TableCell>
-                <TableCell className="font-medium">{barang.nama_barang}</TableCell>
-                <TableCell className="text-right">{barang.total_dibeli}</TableCell>
-                <TableCell className="text-right">{formatCurrency(barang.total_nilai)}</TableCell>
+                <TableCell className="font-medium text-xs md:text-sm">{barang.nama_barang}</TableCell>
+                <TableCell className="text-right text-xs md:text-sm">{barang.total_dibeli}</TableCell>
+                <TableCell className="text-right text-xs md:text-sm whitespace-nowrap">{formatCurrency(barang.total_nilai)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

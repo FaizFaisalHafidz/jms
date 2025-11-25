@@ -22,28 +22,32 @@ export default function SupplierTable({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pembelian per Supplier</CardTitle>
-        <CardDescription>Breakdown berdasarkan supplier</CardDescription>
+        <CardTitle className="text-lg md:text-xl">Per Supplier</CardTitle>
+        <CardDescription className="text-sm">Breakdown berdasarkan supplier</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="overflow-x-auto -mx-6 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Supplier</TableHead>
-              <TableHead className="text-right">Jumlah Transaksi</TableHead>
-              <TableHead className="text-right">Total Pembelian</TableHead>
+              <TableHead className="text-xs md:text-sm">Supplier</TableHead>
+              <TableHead className="text-right text-xs md:text-sm">Jumlah Transaksi</TableHead>
+              <TableHead className="text-right text-xs md:text-sm">Total Pembelian</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.map((supplier, index) => (
               <TableRow key={index}>
-                <TableCell className="font-medium">{supplier.nama_suplier}</TableCell>
-                <TableCell className="text-right">{supplier.jumlah}</TableCell>
-                <TableCell className="text-right font-medium">{formatCurrency(supplier.total)}</TableCell>
+                <TableCell className="font-medium text-xs md:text-sm">{supplier.nama_suplier}</TableCell>
+                <TableCell className="text-right text-xs md:text-sm">{supplier.jumlah}</TableCell>
+                <TableCell className="text-right font-medium text-xs md:text-sm whitespace-nowrap">{formatCurrency(supplier.total)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

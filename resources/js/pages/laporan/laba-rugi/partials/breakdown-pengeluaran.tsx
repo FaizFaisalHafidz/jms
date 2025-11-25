@@ -27,15 +27,27 @@ export default function BreakdownPengeluaran({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Breakdown Pengeluaran</CardTitle>
-        <CardDescription>Pengeluaran berdasarkan kategori</CardDescription>
+        <CardTitle className="text-lg md:text-xl">Breakdown Pengeluaran</CardTitle>
+        <CardDescription className="text-sm">Pengeluaran berdasarkan kategori</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data} layout="vertical">
+      <CardContent className="p-0">
+        <div className="w-full overflow-x-auto">
+          <div style={{ minWidth: '600px', width: '100%', padding: '16px' }}>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={data} layout="vertical" margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" tickFormatter={formatCurrency} />
-            <YAxis dataKey="kategori_pengeluaran" type="category" tickFormatter={formatKategori} width={100} />
+            <XAxis 
+              type="number" 
+              tickFormatter={formatCurrency} 
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis 
+              dataKey="kategori_pengeluaran" 
+              type="category" 
+              tickFormatter={formatKategori} 
+              width={120}
+              tick={{ fontSize: 11 }}
+            />
             <Tooltip formatter={(value) => formatCurrency(Number(value))} />
             <Bar dataKey="total" name="Total Pengeluaran">
               {data.map((entry, index) => (
@@ -44,6 +56,8 @@ export default function BreakdownPengeluaran({ data }: Props) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

@@ -26,6 +26,7 @@ class ServiceHp extends Model
         'biaya_spare_part',
         'biaya_jasa',
         'total_biaya',
+        'laba_service',
         'status_service',
         'tanggal_selesai',
         'tanggal_diambil',
@@ -42,6 +43,7 @@ class ServiceHp extends Model
         'biaya_spare_part' => 'integer',
         'biaya_jasa' => 'integer',
         'total_biaya' => 'integer',
+        'laba_service' => 'integer',
     ];
 
     // Relationships

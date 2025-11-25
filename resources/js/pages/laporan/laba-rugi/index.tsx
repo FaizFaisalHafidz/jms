@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
     Select,
     SelectContent,
@@ -8,27 +7,27 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import AppLayout from "@/layouts/app-layout";
+import LaporanLayout from "@/layouts/laporan-layout";
+import { cn } from '@/lib/utils';
 import { PageProps } from "@/types";
 import { Head, router } from "@inertiajs/react";
-import BreakdownPengeluaran from "./partials/breakdown-pengeluaran";
-import CabangLabaRugiTable from "./partials/cabang-laba-rugi-table";
-import GrafikLaba from "./partials/grafik-laba";
-import LabaRugiStats from "./partials/laba-rugi-stats";
+import { Activity, Calendar, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 
 interface LabaPerCabang {
   nama_cabang: string;
   kota: string;
   pendapatan: number;
-  pengeluaran: number;
-  laba_rugi: number;
+  laba_kotor: number;
+  biaya_operasional: number;
+  laba_bersih: number;
 }
 
 interface GrafikData {
   tanggal: string;
-  pendapatan: number;
-  pengeluaran: number;
-  laba: number;
+  laba_kotor: number;
+  pendapatan_service: number;
+  biaya_operasional: number;
+  laba_bersih: number;
 }
 
 interface BreakdownData {
@@ -48,10 +47,10 @@ interface Props extends PageProps {
     service: number;
     retur: number;
     total_pendapatan: number;
-    pembelian: number;
+    laba_kotor_penjualan: number;
+    laba_service: number;
     biaya_operasional: number;
-    total_pengeluaran: number;
-    laba_rugi: number;
+    laba_bersih: number;
   };
   laba_per_cabang: LabaPerCabang[];
   grafik_laba: GrafikData[];
@@ -119,107 +118,283 @@ export default function LaporanLabaRugiPage({ filters, stats, laba_per_cabang, g
     });
   };
 
+  const formatRupiah = (value: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatDate = () => {
+    if (filters.filter_type === 'harian' && filters.tanggal) {
+      return new Date(filters.tanggal).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    } else if (filters.bulan && filters.tahun) {
+      const month = months.find(m => m.value === filters.bulan);
+      return `${month?.label} ${filters.tahun}`;
+    }
+    return '';
+  };
+
   return (
     <>
       <Head title="Laporan Laba Rugi" />
-      <div className="space-y-6 p-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Laporan Laba Rugi</h1>
-          <p className="text-muted-foreground">
-            Laporan laba rugi seluruh cabang
-          </p>
-        </div>
+      <div className="space-y-4">
+        {/* Filter Section - Compact */}
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">
+                {formatDate()}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Select
+                value={filters.filter_type}
+                onValueChange={handleFilterTypeChange}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Tipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="harian">Harian</SelectItem>
+                  <SelectItem value="bulanan">Bulanan</SelectItem>
+                </SelectContent>
+              </Select>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Filter Laporan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="filter_type">Tipe Filter</Label>
+              {filters.filter_type === 'harian' ? (
+                <Input
+                  type="date"
+                  value={filters.tanggal || ''}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              ) : (
+                <>
+                  <Select
+                    value={filters.tahun || ''}
+                    onValueChange={(value) => handleMonthFilterChange('tahun', value)}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Tahun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+            </div>
+            
+            {filters.filter_type === 'bulanan' && (
+              <div className="mt-2">
                 <Select
-                  value={filters.filter_type}
-                  onValueChange={handleFilterTypeChange}
+                  value={filters.bulan || ''}
+                  onValueChange={(value) => handleMonthFilterChange('bulan', value)}
                 >
-                  <SelectTrigger id="filter_type">
-                    <SelectValue placeholder="Pilih tipe filter" />
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Bulan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="harian">Harian</SelectItem>
-                    <SelectItem value="bulanan">Bulanan</SelectItem>
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
+            )}
+          </CardContent>
+        </Card>
 
-              {filters.filter_type === 'harian' ? (
-                <div className="space-y-2">
-                  <Label htmlFor="tanggal">Tanggal</Label>
-                  <Input
-                    id="tanggal"
-                    type="date"
-                    value={filters.tanggal || ''}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                  />
+        {/* Main Stats - Mobile Optimized */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Omzet */}
+          <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="p-2 bg-blue-500 rounded-lg">
+                  <DollarSign className="h-4 w-4 text-white" />
                 </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="tahun">Tahun</Label>
-                    <Select
-                      value={filters.tahun || ''}
-                      onValueChange={(value) => handleMonthFilterChange('tahun', value)}
-                    >
-                      <SelectTrigger id="tahun">
-                        <SelectValue placeholder="Pilih tahun" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {years.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] text-gray-600 font-medium">Omzet</p>
+                <p className="text-sm font-bold text-gray-900 leading-tight">
+                  {formatRupiah(stats.total_pendapatan).replace('Rp', 'Rp ')}
+                </p>
+                <p className="text-[9px] text-gray-500">
+                  Penjualan + Service
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="bulan">Bulan</Label>
-                    <Select
-                      value={filters.bulan || ''}
-                      onValueChange={(value) => handleMonthFilterChange('bulan', value)}
-                    >
-                      <SelectTrigger id="bulan">
-                        <SelectValue placeholder="Pilih bulan" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {months.map((month) => (
-                          <SelectItem key={month.value} value={month.value}>
-                            {month.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+          {/* Laba Bersih */}
+          <Card className={cn(
+            "border-0 shadow-sm",
+            stats.laba_bersih >= 0 
+              ? "bg-gradient-to-br from-green-50 to-green-100/50" 
+              : "bg-gradient-to-br from-red-50 to-red-100/50"
+          )}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className={cn(
+                  "p-2 rounded-lg",
+                  stats.laba_bersih >= 0 ? "bg-green-500" : "bg-red-500"
+                )}>
+                  {stats.laba_bersih >= 0 ? (
+                    <TrendingUp className="h-4 w-4 text-white" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-white" />
+                  )}
                 </div>
-              )}
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] text-gray-600 font-medium">Laba Bersih</p>
+                <p className={cn(
+                  "text-sm font-bold leading-tight",
+                  stats.laba_bersih >= 0 ? "text-green-700" : "text-red-700"
+                )}>
+                  {formatRupiah(stats.laba_bersih).replace('Rp', 'Rp ')}
+                </p>
+                <p className="text-[9px] text-gray-500">
+                  Setelah operasional
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Breakdown Laba - Compact Cards */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Rincian Laba
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Laba Penjualan */}
+            <div className="flex items-center justify-between p-2.5 bg-green-50 rounded-lg">
+              <div>
+                <p className="text-[10px] text-gray-600 mb-0.5">Laba Penjualan</p>
+                <p className="text-xs font-bold text-green-700">
+                  {formatRupiah(stats.laba_kotor_penjualan)}
+                </p>
+              </div>
+              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </div>
+            </div>
+
+            {/* Laba Service */}
+            <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-lg">
+              <div>
+                <p className="text-[10px] text-gray-600 mb-0.5">Laba Service</p>
+                <p className="text-xs font-bold text-purple-700">
+                  {formatRupiah(stats.laba_service)}
+                </p>
+              </div>
+              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <Activity className="h-4 w-4 text-purple-600" />
+              </div>
+            </div>
+
+            {/* Biaya Operasional */}
+            <div className="flex items-center justify-between p-2.5 bg-orange-50 rounded-lg">
+              <div>
+                <p className="text-[10px] text-gray-600 mb-0.5">Biaya Operasional</p>
+                <p className="text-xs font-bold text-orange-700">
+                  {formatRupiah(stats.biaya_operasional)}
+                </p>
+              </div>
+              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <TrendingDown className="h-4 w-4 text-orange-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <LabaRugiStats stats={stats} />
+        {/* Laba per Cabang */}
+        {laba_per_cabang && laba_per_cabang.length > 0 && (
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Laba per Cabang</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {laba_per_cabang.map((cabang, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">{cabang.nama_cabang}</p>
+                    <p className="text-xs text-gray-500">{cabang.kota}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={cn(
+                      "text-sm font-bold",
+                      cabang.laba_bersih >= 0 ? "text-green-600" : "text-red-600"
+                    )}>
+                      {formatRupiah(cabang.laba_bersih)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Omzet: {formatRupiah(cabang.pendapatan)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-        <GrafikLaba data={grafik_laba} />
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <CabangLabaRugiTable data={laba_per_cabang} />
-          <BreakdownPengeluaran data={breakdown_pengeluaran} />
-        </div>
+        {/* Breakdown Pengeluaran */}
+        {breakdown_pengeluaran && breakdown_pengeluaran.length > 0 && (
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Kategori Pengeluaran</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {breakdown_pengeluaran.map((item, index) => {
+                const percentage = (item.total / stats.biaya_operasional) * 100;
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-700">
+                        {item.kategori_pengeluaran}
+                      </p>
+                      <p className="text-xs font-bold text-gray-900">
+                        {formatRupiah(item.total)}
+                      </p>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-orange-500 h-1.5 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </>
   );
 }
 
 LaporanLabaRugiPage.layout = (page: React.ReactNode) => (
-  <AppLayout children={page} />
+  <LaporanLayout title="Laporan Laba Rugi" children={page} />
 );

@@ -108,8 +108,11 @@ class ServiceHpController extends Controller
             $biayaSparePart = $request->biaya_spare_part ?? 0;
             $biayaJasa = $request->biaya_jasa ?? 0;
             $totalBiaya = $biayaSparePart + $biayaJasa;
+            
+            // Hitung laba service
+            $labaService = $biayaJasa; // Laba jasa = 100% dari biaya jasa
 
-            // Jika menggunakan barang dari inventory, kurangi stok
+            // Jika menggunakan barang dari inventory, kurangi stok dan hitung laba spare part
             if ($request->barang_id && $request->jumlah_barang) {
                 $stokCabang = StokCabang::where('cabang_id', $cabangId)
                     ->where('barang_id', $request->barang_id)
@@ -123,8 +126,19 @@ class ServiceHpController extends Controller
                     ], 400);
                 }
 
+                // Ambil harga asal barang untuk hitung laba
+                $barang = Barang::find($request->barang_id);
+                $hargaModalSparePart = $barang->harga_asal * $request->jumlah_barang;
+                
+                // Laba spare part = biaya yang dikenakan - harga modal
+                $labaSparePart = $biayaSparePart - $hargaModalSparePart;
+                $labaService += $labaSparePart;
+
                 // Kurangi stok
                 $stokCabang->decrement('jumlah_stok', $request->jumlah_barang);
+            } else {
+                // Jika spare part manual (tidak dari inventory), anggap semua biaya spare part adalah laba
+                $labaService += $biayaSparePart;
             }
 
             $service = ServiceHp::create([
@@ -144,6 +158,7 @@ class ServiceHpController extends Controller
                 'biaya_spare_part' => $biayaSparePart,
                 'biaya_jasa' => $biayaJasa,
                 'total_biaya' => $totalBiaya,
+                'laba_service' => $labaService,
                 'status_service' => 'diterima',
                 'teknisi_id' => $request->teknisi_id,
                 'kasir_id' => Auth::id(),

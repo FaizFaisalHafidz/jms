@@ -50,16 +50,18 @@ export default function MetodePembayaranTable({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pembayaran per Metode</CardTitle>
-        <CardDescription>Breakdown berdasarkan metode pembayaran</CardDescription>
+        <CardTitle className="text-lg md:text-xl">Per Metode Pembayaran</CardTitle>
+        <CardDescription className="text-sm">Breakdown berdasarkan metode pembayaran</CardDescription>
       </CardHeader>
       <CardContent>
-        <Table>
+        <div className="overflow-x-auto -mx-6 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Metode</TableHead>
-              <TableHead className="text-right">Jumlah</TableHead>
-              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-xs md:text-sm">Metode</TableHead>
+              <TableHead className="text-right text-xs md:text-sm">Jumlah</TableHead>
+              <TableHead className="text-right text-xs md:text-sm">Total</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -68,17 +70,19 @@ export default function MetodePembayaranTable({ data }: Props) {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     {getMetodeIcon(metode.metode_pembayaran)}
-                    <Badge variant={getMetodeVariant(metode.metode_pembayaran)}>
+                    <Badge variant={getMetodeVariant(metode.metode_pembayaran)} className="text-xs">
                       {metode.metode_pembayaran}
                     </Badge>
                   </div>
                 </TableCell>
-                <TableCell className="text-right">{metode.jumlah}</TableCell>
-                <TableCell className="text-right font-medium">{formatCurrency(metode.total)}</TableCell>
+                <TableCell className="text-right text-xs md:text-sm">{metode.jumlah}</TableCell>
+                <TableCell className="text-right font-medium text-xs md:text-sm whitespace-nowrap">{formatCurrency(metode.total)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

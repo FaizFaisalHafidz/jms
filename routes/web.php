@@ -13,7 +13,14 @@ use Laravel\Fortify\Features;
 Route::redirect('/', 'dashboard')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+        ->middleware('redirect.owner')
+        ->name('dashboard');
+
+    // Owner Dashboard
+    Route::get('owner/dashboard', [\App\Http\Controllers\OwnerDashboardController::class, 'index'])
+        ->middleware('redirect.not.owner')
+        ->name('owner.dashboard');
 
     // Cabang Routes
     Route::resource('cabang', \App\Http\Controllers\CabangController::class)->except(['show', 'create', 'edit']);

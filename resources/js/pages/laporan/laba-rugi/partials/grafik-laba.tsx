@@ -23,12 +23,14 @@ export default function GrafikLaba({ data }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Grafik Laba Rugi</CardTitle>
-        <CardDescription>Tren laba rugi harian</CardDescription>
+        <CardTitle className="text-lg md:text-xl">Grafik Laba Rugi</CardTitle>
+        <CardDescription className="text-sm">Tren laba rugi harian</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={350}>
-          <AreaChart data={data}>
+      <CardContent className="p-0">
+        <div className="w-full overflow-x-auto">
+          <div style={{ minWidth: '600px', width: '100%', padding: '16px' }}>
+          <ResponsiveContainer width="100%" height={350}>
+            <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorPendapatan" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
@@ -44,8 +46,18 @@ export default function GrafikLaba({ data }: Props) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="tanggal" />
-            <YAxis tickFormatter={formatCurrency} />
+            <XAxis 
+              dataKey="tanggal" 
+              tick={{ fontSize: 12 }}
+              angle={-45}
+              textAnchor="end"
+              height={60}
+            />
+            <YAxis 
+              tickFormatter={formatCurrency} 
+              tick={{ fontSize: 12 }}
+              width={80}
+            />
             <Tooltip formatter={(value) => formatCurrency(Number(value))} />
             <Legend />
             <Area type="monotone" dataKey="pendapatan" stroke="#10b981" fillOpacity={1} fill="url(#colorPendapatan)" name="Pendapatan" />
@@ -53,6 +65,8 @@ export default function GrafikLaba({ data }: Props) {
             <Area type="monotone" dataKey="laba" stroke="#3b82f6" fillOpacity={1} fill="url(#colorLaba)" name="Laba" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
