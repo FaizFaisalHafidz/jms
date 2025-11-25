@@ -1,8 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Link, router, usePage } from '@inertiajs/react';
-import { Home, LogOut, Package, ShoppingBag, ShoppingCart, TrendingUp } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,6 +8,11 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { Link, router, usePage } from '@inertiajs/react';
+import { Home, LogOut, Package, ShoppingBag, ShoppingCart, TrendingUp } from 'lucide-react';
+import { type ReactNode, useState } from 'react';
 
 interface OwnerLayoutProps {
     children: ReactNode;
