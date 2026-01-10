@@ -27,6 +27,7 @@ interface Barang {
     kode_barang: string;
     nama_barang: string;
     harga_konsumen: number;
+    harga_partai?: number;
 }
 
 interface SparePart {

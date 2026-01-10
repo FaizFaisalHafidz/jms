@@ -33,6 +33,7 @@ interface Barang {
     harga_asal: number;
     harga_konsumen: number;
     harga_konter: number;
+    harga_partai: number;
     stok_minimal: number;
     deskripsi?: string;
     foto_barang?: string;

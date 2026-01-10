@@ -22,6 +22,7 @@ class Barang extends Model
         'harga_asal',
         'harga_konsumen',
         'harga_konter',
+        'harga_partai',
         'stok_minimal',
         'deskripsi',
         'foto_barang',
@@ -32,6 +33,7 @@ class Barang extends Model
         'harga_asal' => 'integer',
         'harga_konsumen' => 'integer',
         'harga_konter' => 'integer',
+        'harga_partai' => 'integer',
         'stok_minimal' => 'integer',
         'status_aktif' => 'boolean',
     ];

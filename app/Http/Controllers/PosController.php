@@ -68,6 +68,7 @@ class PosController extends Controller
                     'harga_asal' => $item->harga_asal,
                     'harga_konsumen' => $item->harga_konsumen,
                     'harga_konter' => $item->harga_konter,
+                    'harga_partai' => $item->harga_partai,
                     'satuan' => $item->satuan,
                     'stok' => $stok ? $stok->jumlah_stok : 0,
                 ];

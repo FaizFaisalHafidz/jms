@@ -97,6 +97,7 @@ class BarangSeeder extends Seeder
                 'harga_asal' => 0,
                 'harga_konsumen' => $hargaKonsumen,
                 'harga_konter' => $hargaKonter,
+                'harga_partai' => $hargaKonter > 0 ? (int)($hargaKonter * 0.9) : 0, // 10% lebih murah dari konter
                 'stok_minimal' => 5,
                 'deskripsi' => null,
                 'foto_barang' => null,

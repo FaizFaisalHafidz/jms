@@ -65,6 +65,7 @@ interface Barang {
     harga_asal: number;
     harga_konsumen: number;
     harga_konter: number;
+    harga_partai: number;
     stok_minimal: number;
     deskripsi?: string;
     foto_barang?: string;
@@ -208,6 +209,11 @@ export function BarangTable({ barang, onEdit }: BarangTableProps) {
             accessorKey: 'harga_konter',
             header: 'Harga Konter',
             cell: ({ row }) => formatRupiah(row.original.harga_konter),
+        },
+        {
+            accessorKey: 'harga_partai',
+            header: 'Harga Partai',
+            cell: ({ row }) => formatRupiah(row.original.harga_partai),
         },
         {
             accessorKey: 'satuan',

@@ -28,6 +28,7 @@ interface Barang {
     nama_barang: string;
     barcode?: string;
     harga_konsumen: number;
+    harga_partai?: number;
     kategori: KategoriBarang;
     suplier: Suplier;
 }

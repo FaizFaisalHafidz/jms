@@ -43,6 +43,7 @@ interface Barang {
     harga_asal: number;
     harga_konsumen: number;
     harga_konter: number;
+    harga_partai: number;
     stok_minimal: number;
     deskripsi?: string;
     status_aktif: boolean;
@@ -74,6 +75,7 @@ export function BarangFormModal({
         harga_asal: 0,
         harga_konsumen: 0,
         harga_konter: 0,
+        harga_partai: 0,
         stok_minimal: 5,
         deskripsi: '',
         status_aktif: true,
@@ -115,6 +117,7 @@ export function BarangFormModal({
                 harga_asal: barang.harga_asal,
                 harga_konsumen: barang.harga_konsumen,
                 harga_konter: barang.harga_konter,
+                harga_partai: barang.harga_partai,
                 stok_minimal: barang.stok_minimal,
                 deskripsi: barang.deskripsi || '',
                 status_aktif: barang.status_aktif,
@@ -366,7 +369,7 @@ export function BarangFormModal({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="harga_asal">
                                 Harga Modal <span className="text-red-600">*</span>
@@ -434,6 +437,31 @@ export function BarangFormModal({
                             {errors.harga_konter && (
                                 <p className="text-sm text-red-600">
                                     {errors.harga_konter}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="harga_partai">
+                                Harga Partai{' '}
+                                <span className="text-red-600">*</span>
+                            </Label>
+                            <Input
+                                id="harga_partai"
+                                type="number"
+                                value={data.harga_partai}
+                                onChange={(e) =>
+                                    setData(
+                                        'harga_partai',
+                                        parseInt(e.target.value) || 0
+                                    )
+                                }
+                                min={0}
+                                placeholder="0"
+                            />
+                            {errors.harga_partai && (
+                                <p className="text-sm text-red-600">
+                                    {errors.harga_partai}
                                 </p>
                             )}
                         </div>

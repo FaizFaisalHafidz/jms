@@ -42,6 +42,7 @@ interface Barang {
     harga_asal: number;
     harga_konsumen: number;
     harga_konter: number;
+    harga_partai: number;
     satuan: string;
     stok: number;
 }
@@ -52,7 +53,7 @@ interface CartItem {
     nama_barang: string;
     jumlah: number;
     harga_jual: number;
-    jenis_harga: 'konsumen' | 'konter';
+    jenis_harga: 'konsumen' | 'konter' | 'partai';
     diskon_item: number;
     subtotal: number;
     stok: number;
@@ -155,7 +156,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
 
     const handleSelectBarang = (
         barang: Barang,
-        jenisHarga: 'konsumen' | 'konter'
+        jenisHarga: 'konsumen' | 'konter' | 'partai'
     ) => {
         if (barang.stok <= 0) {
             toast.error('Stok barang tidak tersedia');
@@ -165,7 +166,9 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
         const hargaJual =
             jenisHarga === 'konsumen'
                 ? barang.harga_konsumen
-                : barang.harga_konter;
+                : jenisHarga === 'konter'
+                ? barang.harga_konter
+                : barang.harga_partai;
 
         // Check if item already in cart
         const existingIndex = cart.findIndex(
@@ -543,6 +546,21 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                                     >
                                                         Konter -{' '}
                                                         {formatRupiah(barang.harga_konter)}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={() =>
+                                                            handleSelectBarang(
+                                                                barang,
+                                                                'partai'
+                                                            )
+                                                        }
+                                                        disabled={barang.stok <= 0}
+                                                        className="flex-1"
+                                                    >
+                                                        Partai -{' '}
+                                                        {formatRupiah(barang.harga_partai)}
                                                     </Button>
                                                 </div>
                                             </div>
