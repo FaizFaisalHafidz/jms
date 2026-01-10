@@ -122,7 +122,7 @@ export default function BarangIndex({
 
                 <BarangStats stats={stats} />
 
-                <BarangTable barang={barang} onEdit={handleEdit} />
+                <BarangTable barang={barang} kategori={kategori} onEdit={handleEdit} />
 
                 <BarangFormModal
                     isOpen={isModalOpen}

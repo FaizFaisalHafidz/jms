@@ -10,6 +10,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -77,10 +84,11 @@ interface Barang {
 
 interface BarangTableProps {
     barang: Barang[];
+    kategori: KategoriBarang[];
     onEdit: (barang: Barang) => void;
 }
 
-export function BarangTable({ barang, onEdit }: BarangTableProps) {
+export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
@@ -193,6 +201,7 @@ export function BarangTable({ barang, onEdit }: BarangTableProps) {
             },
         },
         {
+            id: 'kategori',
             accessorKey: 'kategori.nama_kategori',
             header: 'Kategori',
         },
@@ -341,20 +350,46 @@ export function BarangTable({ barang, onEdit }: BarangTableProps) {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    <Input
-                        placeholder="Cari barang..."
-                        value={
-                            (table
-                                .getColumn('nama_barang')
-                                ?.getFilterValue() as string) ?? ''
-                        }
-                        onChange={(event) =>
-                            table
-                                .getColumn('nama_barang')
-                                ?.setFilterValue(event.target.value)
-                        }
-                        className="max-w-sm"
-                    />
+                    <div className="flex gap-4">
+                        <Input
+                            placeholder="Cari barang..."
+                            value={
+                                (table
+                                    .getColumn('nama_barang')
+                                    ?.getFilterValue() as string) ?? ''
+                            }
+                            onChange={(event) =>
+                                table
+                                    .getColumn('nama_barang')
+                                    ?.setFilterValue(event.target.value)
+                            }
+                            className="max-w-sm"
+                        />
+                        <Select
+                            value={
+                                (table
+                                    .getColumn('kategori')
+                                    ?.getFilterValue() as string) ?? 'all'
+                            }
+                            onValueChange={(value) =>
+                                table
+                                    .getColumn('kategori')
+                                    ?.setFilterValue(value === 'all' ? '' : value)
+                            }
+                        >
+                            <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Semua Kategori" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Kategori</SelectItem>
+                                {kategori.map((k) => (
+                                    <SelectItem key={k.id} value={k.nama_kategori}>
+                                        {k.nama_kategori}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="rounded-md border overflow-x-auto">
                         <Table>
                             <TableHeader>
