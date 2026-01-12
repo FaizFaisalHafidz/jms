@@ -328,47 +328,53 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 <title>Struk - ${transaksiData.nomor_transaksi}</title>
                 <style>
                     @media print {
-                        @page { margin: 0; size: 58mm auto; }
+                        @page { margin: 0; size: 57.5mm auto; }
                     }
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
                         font-family: 'Courier New', monospace; 
-                        font-size: 11px; 
-                        width: 58mm;
-                        padding: 5mm;
-                        line-height: 1.4;
+                        font-size: 8px; 
+                        width: 57.5mm;
+                        max-width: 57.5mm;
+                        padding: 1mm 2mm;
+                        line-height: 1.2;
+                        overflow-x: hidden;
                     }
                     .center { text-align: center; }
                     .bold { font-weight: bold; }
-                    .line { border-top: 1px dashed #000; margin: 5px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                    .item { margin: 3px 0; }
-                    .item-name { font-size: 10px; }
-                    .item-detail { display: flex; justify-content: space-between; font-size: 9px; }
-                    .total { font-size: 12px; margin-top: 5px; }
-                    .footer { margin-top: 10px; font-size: 9px; }
-                    .logo { width: 80px; height: auto; margin: 5px auto 8px; display: block; }
+                    .line { border-top: 1px dashed #000; margin: 2px 0; }
+                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 8px; gap: 3px; }
+                    .row span:first-child { flex-shrink: 0; }
+                    .row span:last-child { text-align: right; }
+                    .item { margin: 2px 0; }
+                    .item-name { font-size: 8px; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; line-height: 1.3; }
+                    .item-detail { display: flex; justify-content: space-between; font-size: 7px; gap: 3px; }
+                    .item-detail span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                    .item-detail span:last-child { flex-shrink: 0; }
+                    .total { font-size: 9px; margin-top: 2px; }
+                    .footer { margin-top: 5px; font-size: 7px; line-height: 1.3; }
+                    .logo { width: 50px; height: auto; margin: 2px auto 3px; display: block; }
                 </style>
             </head>
             <body>
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
-                <div class="center bold" style="font-size: 14px; margin-bottom: 2px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center bold" style="font-size: 13px;">Cabang ${cabang_nama}</div>
-                <div class="center" style="font-size: 9px;">${cabang_alamat || '-'}</div>
-                <div class="center" style="font-size: 9px; margin-bottom: 5px;">Telp: ${cabang_telepon || '-'}</div>
+                <div class="center bold" style="font-size: 10px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
+                <div class="center" style="font-size: 8px;">Cbg ${cabang_nama}</div>
+                <div class="center" style="font-size: 7px;">${cabang_alamat || '-'}</div>
+                <div class="center" style="font-size: 7px; margin-bottom: 2px;">Telp: ${cabang_telepon || '-'}</div>
                 <div class="line"></div>
-                <div class="center" style="font-size: 9px; margin-bottom: 5px;">STRUK PENJUALAN</div>
+                <div class="center" style="font-size: 7px; margin-bottom: 2px;">STRUK PENJUALAN</div>
                 <div class="line"></div>
                 
                 <div class="row">
-                    <span>No. Transaksi</span>
+                    <span>No.</span>
                     <span class="bold">${transaksiData.nomor_transaksi}</span>
                 </div>
                 <div class="row">
-                    <span>Tanggal</span>
-                    <span>${new Date(transaksiData.tanggal_transaksi).toLocaleString('id-ID', { 
+                    <span>Tgl</span>
+                    <span style="font-size: 7px;">${new Date(transaksiData.tanggal_transaksi).toLocaleString('id-ID', { 
                         day: '2-digit', 
                         month: '2-digit', 
                         year: 'numeric',
@@ -382,7 +388,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 </div>
                 ${transaksiData.nama_pelanggan ? `
                 <div class="row">
-                    <span>Pelanggan</span>
+                    <span>Cust</span>
                     <span>${transaksiData.nama_pelanggan}</span>
                 </div>
                 ` : ''}
@@ -393,8 +399,8 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     <div class="item">
                         <div class="item-name bold">${item.nama_barang}</div>
                         <div class="item-detail">
-                            <span>${item.jumlah} x ${formatRupiah(item.harga_jual)} (${item.jenis_harga})</span>
-                            <span class="bold">${formatRupiah(item.subtotal)}</span>
+                            <span>${item.jumlah}x@${formatRupiah(item.harga_jual).replace('Rp ', '')}</span>
+                            <span class="bold">${formatRupiah(item.subtotal).replace('Rp ', '')}</span>
                         </div>
                     </div>
                 `).join('')}
@@ -413,7 +419,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 ` : ''}
                 ${transaksiData.biaya_service > 0 ? `
                 <div class="row">
-                    <span>Biaya Service</span>
+                    <span>Biaya Servis</span>
                     <span>${formatRupiah(transaksiData.biaya_service)}</span>
                 </div>
                 ` : ''}
@@ -425,11 +431,11 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     <span>${formatRupiah(transaksiData.total_bayar)}</span>
                 </div>
                 <div class="row">
-                    <span>Bayar (${transaksiData.metode_pembayaran.toUpperCase()})</span>
+                    <span>Bayar</span>
                     <span>${formatRupiah(transaksiData.jumlah_bayar)}</span>
                 </div>
                 <div class="row bold">
-                    <span>Kembalian</span>
+                    <span>Kembali</span>
                     <span>${formatRupiah(transaksiData.kembalian)}</span>
                 </div>
                 
@@ -437,7 +443,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 
                 <div class="center footer">
                     Terima kasih atas kunjungan Anda<br>
-                    Barang yang sudah dibeli tidak dapat dikembalikan
+                    Barang yang sudah dibeli<br>tidak dapat dikembalikan
                 </div>
             </body>
             </html>

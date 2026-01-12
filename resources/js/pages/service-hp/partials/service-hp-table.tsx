@@ -111,44 +111,48 @@ export default function ServiceHpTable({ services }: Props) {
                 <title>Struk Service - ${selectedService.nomor_service}</title>
                 <style>
                     @media print {
-                        @page { margin: 0; size: 58mm auto; }
+                        @page { margin: 0; size: 57.5mm auto; }
                     }
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
                         font-family: 'Courier New', monospace; 
-                        font-size: 11px; 
-                        width: 58mm;
-                        padding: 5mm;
-                        line-height: 1.4;
+                        font-size: 8px; 
+                        width: 57.5mm;
+                        max-width: 57.5mm;
+                        padding: 1mm 2mm;
+                        line-height: 1.2;
+                        overflow-x: hidden;
                     }
                     .center { text-align: center; }
                     .bold { font-weight: bold; }
-                    .line { border-top: 1px dashed #000; margin: 5px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                    .label { font-size: 9px; color: #666; }
-                    .value { font-size: 10px; }
-                    .footer { margin-top: 10px; font-size: 9px; }
-                    .logo { width: 80px; height: auto; margin: 5px auto 8px; display: block; }
+                    .line { border-top: 1px dashed #000; margin: 2px 0; }
+                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 8px; gap: 3px; }
+                    .row span:first-child { flex-shrink: 0; }
+                    .row span:last-child { text-align: right; }
+                    .label { font-size: 7px; color: #666; }
+                    .value { font-size: 8px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; }
+                    .footer { margin-top: 5px; font-size: 7px; line-height: 1.3; }
+                    .logo { width: 50px; height: auto; margin: 2px auto 3px; display: block; }
                 </style>
             </head>
             <body>
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
-                <div class="center bold" style="font-size: 14px; margin-bottom: 2px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center bold" style="font-size: 13px;">Cabang ${selectedService.cabang_nama}</div>
-                ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 9px;">${selectedService.cabang_alamat}</div>` : ''}
-                ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 9px; margin-bottom: 5px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
+                <div class="center bold" style="font-size: 10px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
+                <div class="center" style="font-size: 8px;">Cbg ${selectedService.cabang_nama}</div>
+                ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 7px;">${selectedService.cabang_alamat}</div>` : ''}
+                ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 7px; margin-bottom: 2px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
                 <div class="line"></div>
-                <div class="center bold" style="font-size: 10px; margin-bottom: 5px;">NOTA SERVICE HP</div>
+                <div class="center bold" style="font-size: 8px; margin-bottom: 2px;">NOTA SERVICE HP</div>
                 <div class="line"></div>
                 
                 <div class="row">
-                    <span>No. Service:</span>
+                    <span>No.:</span>
                     <span class="bold">${selectedService.nomor_service}</span>
                 </div>
                 <div class="row">
-                    <span>Tanggal:</span>
+                    <span>Tgl:</span>
                     <span>${new Date(selectedService.tanggal_masuk).toLocaleString('id-ID', { 
                         day: '2-digit', 
                         month: 'short', 
