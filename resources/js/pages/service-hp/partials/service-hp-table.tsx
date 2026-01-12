@@ -117,34 +117,34 @@ export default function ServiceHpTable({ services }: Props) {
                     body { 
                         font-family: 'Courier New', monospace; 
                         font-size: 7px; 
-                        width: 54mm;
-                        max-width: 54mm;
-                        padding: 1mm;
-                        line-height: 1.2;
+                        width: 42mm;
+                        max-width: 42mm;
+                        padding: 1mm 5mm;
+                        line-height: 1.1;
                         overflow: hidden;
                     }
                     .center { text-align: center; }
                     .bold { font-weight: bold; }
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; }
-                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                    .row span:last-child { text-align: right; margin-left: 3px; flex-shrink: 0; }
+                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 1px; }
+                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 49%; }
+                    .row span:last-child { text-align: right; }
                     .label { font-size: 6px; color: #666; }
-                    .value { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; }
-                    .footer { margin-top: 5px; font-size: 6px; line-height: 1.3; }
-                    .logo { width: 45px; height: auto; margin: 2px auto 3px; display: block; }
+                    .value { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }
+                    .footer { margin-top: 4px; font-size: 6px; line-height: 1.2; }
+                    .logo { width: 38px; height: auto; margin: 2px auto 2px; display: block; }
                 </style>
             </head>
             <body>
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
-                <div class="center bold" style="font-size: 9px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center" style="font-size: 7px;">Cbg ${selectedService.cabang_nama}</div>
+                <div class="center bold" style="font-size: 8px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
+                <div class="center" style="font-size: 6px;">Cbg ${selectedService.cabang_nama}</div>
                 ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 6px;">${selectedService.cabang_alamat}</div>` : ''}
                 ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 6px; margin-bottom: 2px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
                 <div class="line"></div>
-                <div class="center bold" style="font-size: 7px; margin-bottom: 2px;">NOTA SERVICE HP</div>
+                <div class="center bold" style="font-size: 6px; margin-bottom: 2px;">NOTA SERVICE HP</div>
                 <div class="line"></div>
                 
                 <div class="row">

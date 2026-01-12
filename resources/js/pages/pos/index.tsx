@@ -334,38 +334,38 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     body { 
                         font-family: 'Courier New', monospace; 
                         font-size: 7px; 
-                        width: 54mm;
-                        max-width: 54mm;
-                        padding: 1mm;
-                        line-height: 1.2;
+                        width: 42mm;
+                        max-width: 42mm;
+                        padding: 1mm 5mm;
+                        line-height: 1.1;
                         overflow: hidden;
                     }
                     .center { text-align: center; }
                     .bold { font-weight: bold; }
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; }
-                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                    .row span:last-child { text-align: right; margin-left: 3px; flex-shrink: 0; }
-                    .item { margin: 2px 0; }
-                    .item-name { font-size: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                    .item-detail { display: flex; justify-content: space-between; font-size: 7px; }
-                    .item-detail span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
-                    .item-detail span:last-child { flex-shrink: 0; margin-left: 3px; }
-                    .total { font-size: 8px; margin-top: 2px; }
-                    .footer { margin-top: 5px; font-size: 6px; line-height: 1.3; }
-                    .logo { width: 45px; height: auto; margin: 2px auto 3px; display: block; }
+                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 1px; }
+                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 49%; }
+                    .row span:last-child { text-align: right; }
+                    .item { margin: 1px 0; }
+                    .item-name { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }
+                    .item-detail { display: flex; justify-content: space-between; font-size: 6px; gap: 1px; }
+                    .item-detail span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 56%; }
+                    .item-detail span:last-child { flex-shrink: 0; }
+                    .total { font-size: 8px; margin-top: 1px; }
+                    .footer { margin-top: 4px; font-size: 6px; line-height: 1.2; }
+                    .logo { width: 38px; height: auto; margin: 2px auto 2px; display: block; }
                 </style>
             </head>
             <body>
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
-                <div class="center bold" style="font-size: 9px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center" style="font-size: 7px;">Cbg ${cabang_nama}</div>
+                <div class="center bold" style="font-size: 8px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
+                <div class="center" style="font-size: 6px;">Cbg ${cabang_nama}</div>
                 <div class="center" style="font-size: 6px;">${cabang_alamat || '-'}</div>
                 <div class="center" style="font-size: 6px; margin-bottom: 2px;">Telp: ${cabang_telepon || '-'}</div>
                 <div class="line"></div>
-                <div class="center" style="font-size: 7px; margin-bottom: 2px;">STRUK PENJUALAN</div>
+                <div class="center" style="font-size: 6px; margin-bottom: 2px;">STRUK PENJUALAN</div>
                 <div class="line"></div>
                 
                 <div class="row">
@@ -395,20 +395,15 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 
                 <div class="line"></div>
                 
-                ${transaksiData.items.map(item => {
-                    const namaBarang = item.nama_barang.length > 30 
-                        ? item.nama_barang.substring(0, 30) + '..'
-                        : item.nama_barang;
-                    return `
+                ${transaksiData.items.map(item => `
                     <div class="item">
-                        <div class="item-name bold">${namaBarang}</div>
+                        <div class="item-name bold">${item.nama_barang}</div>
                         <div class="item-detail">
                             <span>${item.jumlah}x@${formatRupiah(item.harga_jual).replace('Rp ', '').replace('.', '')}</span>
                             <span class="bold">${formatRupiah(item.subtotal).replace('Rp ', '').replace('.', '')}</span>
                         </div>
                     </div>
-                    `;
-                }).join('')}
+                `).join('')}
                 
                 <div class="line"></div>
                 
