@@ -343,13 +343,13 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     .center { text-align: center; }
                     .bold { font-weight: bold; }
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 1px; }
-                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 49%; }
+                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 3px; }
+                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
                     .row span:last-child { text-align: right; }
                     .item { margin: 1px 0; }
                     .item-name { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }
-                    .item-detail { display: flex; justify-content: space-between; font-size: 6px; gap: 1px; }
-                    .item-detail span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 56%; }
+                    .item-detail { display: flex; justify-content: space-between; font-size: 6px; gap: 3px; }
+                    .item-detail span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 52%; }
                     .item-detail span:last-child { flex-shrink: 0; }
                     .total { font-size: 8px; margin-top: 1px; }
                     .footer { margin-top: 4px; font-size: 6px; line-height: 1.2; }

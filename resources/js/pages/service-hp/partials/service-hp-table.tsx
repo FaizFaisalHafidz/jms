@@ -126,8 +126,8 @@ export default function ServiceHpTable({ services }: Props) {
                     .center { text-align: center; }
                     .bold { font-weight: bold; }
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 1px; }
-                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 49%; }
+                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 3px; }
+                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
                     .row span:last-child { text-align: right; }
                     .label { font-size: 6px; color: #666; }
                     .value { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }
