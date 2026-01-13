@@ -117,9 +117,9 @@ export default function ServiceHpTable({ services }: Props) {
                     body { 
                         font-family: 'Courier New', monospace; 
                         font-size: 7px; 
-                        width: 42mm;
-                        max-width: 42mm;
-                        padding: 1mm 5mm;
+                        width: 51mm;
+                        max-width: 51mm;
+                        padding: 1mm 2mm;
                         line-height: 1.1;
                         overflow: hidden;
                     }
