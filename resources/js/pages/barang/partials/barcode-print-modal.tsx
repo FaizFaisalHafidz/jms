@@ -3,6 +3,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
@@ -51,6 +52,7 @@ export function BarcodePrintModal({
 }: BarcodePrintModalProps) {
     const [printItems, setPrintItems] = useState<BarangPrintItem[]>([]);
     const [selectAll, setSelectAll] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Initialize print items when modal opens
     useEffect(() => {
@@ -64,27 +66,55 @@ export function BarcodePrintModal({
                         selected: false,
                     }))
             );
+            setSearchQuery(''); // Reset search when modal opens
         }
     }, [isOpen, barang]);
 
+    const filteredItems = printItems.filter((item) =>
+        item.nama_barang.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.kode_barang.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     const handleSelectAll = (checked: boolean) => {
         setSelectAll(checked);
-        setPrintItems(
-            printItems.map((item) => ({ ...item, selected: checked }))
-        );
+        // Only select/deselect visible items if searching, or all items if not
+        if (searchQuery) {
+            const visibleIds = new Set(filteredItems.map(item => item.id));
+            setPrintItems(
+                printItems.map((item) =>
+                    visibleIds.has(item.id) ? { ...item, selected: checked } : item
+                )
+            );
+        } else {
+            setPrintItems(
+                printItems.map((item) => ({ ...item, selected: checked }))
+            );
+        }
     };
 
     const handleSelectItem = (index: number, checked: boolean) => {
+        // Since we map over filtered items below, 'index' might not match 'printItems' index directly
+        // Better to use ID for lookup if possible, but here we can pass the actual item index from the map
         const newItems = [...printItems];
-        newItems[index].selected = checked;
-        setPrintItems(newItems);
-        setSelectAll(newItems.every((item) => item.selected));
+        // find the actual item in the main array
+        const actualIndex = printItems.findIndex(p => p.id === filteredItems[index].id);
+        if (actualIndex !== -1) {
+            newItems[actualIndex].selected = checked;
+            setPrintItems(newItems);
+
+            // Check if all visible items are selected to update Select All state
+            const visibleItems = newItems.filter(item =>
+                item.nama_barang.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                item.kode_barang.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setSelectAll(visibleItems.length > 0 && visibleItems.every((item) => item.selected));
+        }
     };
 
-    const handleJumlahChange = (index: number, jumlah: number) => {
-        const newItems = [...printItems];
-        newItems[index].jumlah = Math.max(1, jumlah);
-        setPrintItems(newItems);
+    const handleJumlahChange = (id: number, jumlah: number) => {
+        setPrintItems(items => items.map(item =>
+            item.id === id ? { ...item, jumlah: Math.max(1, jumlah) } : item
+        ));
     };
 
     const handlePrint = () => {
@@ -234,9 +264,21 @@ export function BarcodePrintModal({
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Cetak Barcode</DialogTitle>
+                    <DialogDescription>
+                        Pilih barang untuk dicetak barcodenya dalam format thermal.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
+                    <div className="relative">
+                        <Input
+                            placeholder="Cari barang berdasarkan nama atau kode..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="bg-white"
+                        />
+                    </div>
+
                     <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
                         <Checkbox
                             id="select-all"
@@ -247,12 +289,12 @@ export function BarcodePrintModal({
                             htmlFor="select-all"
                             className="font-medium cursor-pointer"
                         >
-                            Pilih Semua Barang
+                            Pilih Semua Barang {searchQuery && '(Hasil Pencarian)'}
                         </Label>
                     </div>
 
                     <div className="border rounded-lg divide-y max-h-96 overflow-y-auto">
-                        {printItems.map((item, index) => (
+                        {filteredItems.map((item, index) => (
                             <div
                                 key={item.id}
                                 className="p-4 hover:bg-gray-50 transition-colors"
@@ -307,7 +349,7 @@ export function BarcodePrintModal({
                                                 value={item.jumlah}
                                                 onChange={(e) =>
                                                     handleJumlahChange(
-                                                        index,
+                                                        item.id,
                                                         parseInt(
                                                             e.target.value
                                                         ) || 1
