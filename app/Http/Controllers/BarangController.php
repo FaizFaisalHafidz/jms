@@ -199,7 +199,10 @@ class BarangController extends Controller
             $data['barcode'] = $this->generateBarcode();
             unset($data['regenerate_barcode']);
         } else {
-            // Keep existing barcode
+            // Auto-generate barcode if NULL or empty (for imported/seeded data)
+            if (empty($barang->barcode)) {
+                $data['barcode'] = $this->generateBarcode();
+            }
             unset($data['regenerate_barcode']);
         }
 

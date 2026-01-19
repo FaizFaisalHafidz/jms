@@ -156,11 +156,6 @@ export function BarcodePrintModal({
                         justify-content: center;
                         align-items: center;
                     }
-                    .barcode-item .price {
-                        margin: 2mm 0;
-                        font-size: 10pt;
-                        font-weight: bold;
-                    }
                     .divider {
                         margin: 3mm 0;
                         border-top: 1px dashed #999;
@@ -180,7 +175,6 @@ export function BarcodePrintModal({
                                         <div class="barcode-wrapper">
                                             <svg id="barcode-${item.id}-${i}"></svg>
                                         </div>
-                                        <div class="price">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.harga_konsumen)}</div>
                                     </div>
                                 `);
                     }
