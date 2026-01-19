@@ -150,6 +150,7 @@ export function BarcodePrintModal({
                         padding: 0;
                         width: 80mm;
                         background: white;
+                        font-weight: bold; /* SEMUA TEBAL */
                     }
                     .barcode-container {
                         display: flex;
@@ -162,7 +163,7 @@ export function BarcodePrintModal({
                         text-align: center;
                         background: white;
                         page-break-inside: avoid;
-                        border-bottom: 1px dashed #999;
+                        border-bottom: 1px dashed #000; /* Garis lebih hitam */
                     }
                     .barcode-item:last-child {
                         border-bottom: none;
@@ -170,7 +171,7 @@ export function BarcodePrintModal({
                     .barcode-item h4 {
                         margin: 2mm 0;
                         font-size: 11pt;
-                        font-weight: bold;
+                        font-weight: 900; /* Extra Bold */
                         text-transform: uppercase;
                         word-wrap: break-word;
                         line-height: 1.2;
@@ -178,7 +179,8 @@ export function BarcodePrintModal({
                     .barcode-item .info {
                         margin: 2mm 0;
                         font-size: 9pt;
-                        color: #333;
+                        color: #000; /* Hitam pekat */
+                        font-weight: bold;
                     }
                     .barcode-item .barcode-wrapper {
                         margin: 3mm 0;

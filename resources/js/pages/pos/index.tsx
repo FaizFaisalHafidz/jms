@@ -134,7 +134,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
         }
 
         setKeyword(value);
-        
+
         if (value.length < 2) {
             setSearchResults([]);
             setShowResults(false);
@@ -167,8 +167,8 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
             jenisHarga === 'konsumen'
                 ? barang.harga_konsumen
                 : jenisHarga === 'konter'
-                ? barang.harga_konter
-                : barang.harga_partai;
+                    ? barang.harga_konter
+                    : barang.harga_partai;
 
         // Check if item already in cart
         const existingIndex = cart.findIndex(
@@ -274,7 +274,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
 
             if (response.data.success) {
                 const transaksi = response.data.data;
-                
+
                 // Prepare transaction data for modal
                 setTransaksiData({
                     nomor_transaksi: transaksi.nomor_transaksi,
@@ -291,7 +291,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     kembalian: transaksi.kembalian,
                     metode_pembayaran: metodePembayaran,
                 });
-                
+
                 // Show success modal
                 setShowSuccessModal(true);
 
@@ -339,9 +339,11 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                         padding: 1mm 3mm;
                         line-height: 1.1;
                         overflow: hidden;
+                        font-weight: bold; /* SEMUA TEBAL */
+                        color: #000;
                     }
                     .center { text-align: center; }
-                    .bold { font-weight: bold; }
+                    /* .bold { font-weight: bold; } Hapus karena semua sudah bold */
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
                     .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 3px; }
                     .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
@@ -374,13 +376,13 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 </div>
                 <div class="row">
                     <span>Tgl</span>
-                    <span style="font-size: 7px;">${new Date(transaksiData.tanggal_transaksi).toLocaleString('id-ID', { 
-                        day: '2-digit', 
-                        month: '2-digit', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</span>
+                    <span style="font-size: 7px;">${new Date(transaksiData.tanggal_transaksi).toLocaleString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}</span>
                 </div>
                 <div class="row">
                     <span>Kasir</span>
@@ -452,7 +454,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
         printWindow.document.write(printContent);
         printWindow.document.close();
         printWindow.focus();
-        
+
         setTimeout(() => {
             printWindow.print();
             printWindow.close();
@@ -498,7 +500,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                             className="pl-10 text-lg h-12"
                                         />
                                     </div>
-                                    <BarcodeCameraScanner 
+                                    <BarcodeCameraScanner
                                         onScanSuccess={(barcode) => handleSearch(barcode, true)}
                                     />
                                 </div>
@@ -759,30 +761,27 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                 {/* Kembalian Display - Always Visible */}
                                 {calculateTotal() > 0 && jumlahBayar > 0 && (
                                     <div
-                                        className={`p-4 border-2 rounded-lg ${
-                                            calculateKembalian() >= 0
+                                        className={`p-4 border-2 rounded-lg ${calculateKembalian() >= 0
                                                 ? 'bg-green-50 border-green-300'
                                                 : 'bg-red-50 border-red-300'
-                                        }`}
+                                            }`}
                                     >
                                         <div className="flex justify-between items-center">
                                             <span
-                                                className={`text-sm font-medium ${
-                                                    calculateKembalian() >= 0
+                                                className={`text-sm font-medium ${calculateKembalian() >= 0
                                                         ? 'text-green-700'
                                                         : 'text-red-700'
-                                                }`}
+                                                    }`}
                                             >
                                                 {calculateKembalian() >= 0
                                                     ? 'Kembalian:'
                                                     : 'Kurang:'}
                                             </span>
                                             <span
-                                                className={`text-2xl font-bold ${
-                                                    calculateKembalian() >= 0
+                                                className={`text-2xl font-bold ${calculateKembalian() >= 0
                                                         ? 'text-green-700'
                                                         : 'text-red-700'
-                                                }`}
+                                                    }`}
                                             >
                                                 {formatRupiah(
                                                     Math.abs(calculateKembalian())
@@ -828,7 +827,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                 Transaksi Berhasil!
                             </DialogTitle>
                         </DialogHeader>
-                        
+
                         {transaksiData && (
                             <div className="space-y-4">
                                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">

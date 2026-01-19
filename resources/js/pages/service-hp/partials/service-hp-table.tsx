@@ -122,14 +122,16 @@ export default function ServiceHpTable({ services }: Props) {
                         padding: 1mm 3mm;
                         line-height: 1.1;
                         overflow: hidden;
+                        font-weight: bold; /* SEMUA TEBAL */
+                        color: #000;
                     }
                     .center { text-align: center; }
-                    .bold { font-weight: bold; }
+                    /* .bold { font-weight: bold; } Hapus karena semua sudah bold */
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
                     .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 3px; }
                     .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
                     .row span:last-child { text-align: right; }
-                    .label { font-size: 6px; color: #666; }
+                    .label { font-size: 6px; color: #000; font-weight: bold; } /* Hitam dan Bold */
                     .value { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }
                     .footer { margin-top: 4px; font-size: 6px; line-height: 1.2; }
                     .logo { width: 38px; height: auto; margin: 2px auto 2px; display: block; }
@@ -153,13 +155,13 @@ export default function ServiceHpTable({ services }: Props) {
                 </div>
                 <div class="row">
                     <span>Tgl:</span>
-                    <span>${new Date(selectedService.tanggal_masuk).toLocaleString('id-ID', { 
-                        day: '2-digit', 
-                        month: 'short', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</span>
+                    <span>${new Date(selectedService.tanggal_masuk).toLocaleString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}</span>
                 </div>
                 
                 <div class="line"></div>
@@ -232,13 +234,13 @@ export default function ServiceHpTable({ services }: Props) {
                 ${selectedService.tanggal_selesai ? `
                 <div style="margin: 5px 0;">
                     <div class="label">Selesai:</div>
-                    <div class="value">${new Date(selectedService.tanggal_selesai).toLocaleString('id-ID', { 
-                        day: '2-digit', 
-                        month: 'short', 
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    })}</div>
+                    <div class="value">${new Date(selectedService.tanggal_selesai).toLocaleString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}</div>
                 </div>
                 ` : ''}
                 
@@ -255,7 +257,7 @@ export default function ServiceHpTable({ services }: Props) {
         printWindow.document.write(printContent);
         printWindow.document.close();
         printWindow.focus();
-        
+
         setTimeout(() => {
             printWindow.print();
             printWindow.close();
@@ -294,188 +296,188 @@ export default function ServiceHpTable({ services }: Props) {
 
     return (
         <>
-        <Card>
-            <CardContent className="p-6">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>No. Service</TableHead>
-                                <TableHead>Tanggal</TableHead>
-                                <TableHead>Pelanggan</TableHead>
-                                <TableHead>HP</TableHead>
-                                <TableHead>Keluhan</TableHead>
-                                <TableHead>Teknisi</TableHead>
-                                <TableHead>Total Biaya</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Aksi</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {services.length === 0 ? (
+            <Card>
+                <CardContent className="p-6">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
                                 <TableRow>
-                                    <TableCell
-                                        colSpan={9}
-                                        className="text-center text-muted-foreground"
-                                    >
-                                        Belum ada data service
-                                    </TableCell>
+                                    <TableHead>No. Service</TableHead>
+                                    <TableHead>Tanggal</TableHead>
+                                    <TableHead>Pelanggan</TableHead>
+                                    <TableHead>HP</TableHead>
+                                    <TableHead>Keluhan</TableHead>
+                                    <TableHead>Teknisi</TableHead>
+                                    <TableHead>Total Biaya</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Aksi</TableHead>
                                 </TableRow>
-                            ) : (
-                                services.map((service) => (
-                                    <TableRow key={service.id}>
-                                        <TableCell className="font-medium">
-                                            {service.nomor_service}
-                                        </TableCell>
-                                        <TableCell>
-                                            {formatDate(service.tanggal_masuk)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">
-                                                    {service.nama_pelanggan}
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    {service.telepon_pelanggan}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">
-                                                    {service.merk_hp}
-                                                </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    {service.tipe_hp}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="max-w-xs truncate">
-                                            {service.keluhan}
-                                        </TableCell>
-                                        <TableCell>{service.teknisi}</TableCell>
-                                        <TableCell>
-                                            {formatRupiah(service.total_biaya)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Select
-                                                value={service.status_service}
-                                                onValueChange={(value) => handleStatusChange(service.id, value)}
-                                            >
-                                                <SelectTrigger className="w-[140px]">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="diterima">Diterima</SelectItem>
-                                                    <SelectItem value="dicek">Dicek</SelectItem>
-                                                    <SelectItem value="dikerjakan">Dikerjakan</SelectItem>
-                                                    <SelectItem value="selesai">Selesai</SelectItem>
-                                                    <SelectItem value="diambil">Diambil</SelectItem>
-                                                    <SelectItem value="batal">Batal</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handlePrint(service.id)}
-                                                    title="Print Struk"
-                                                >
-                                                    <Printer className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        router.visit(
-                                                            `/service/${service.id}/edit`
-                                                        )
-                                                    }
-                                                >
-                                                    <Edit className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        handleDelete(
-                                                            service.id,
-                                                            service.nomor_service
-                                                        )
-                                                    }
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {services.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={9}
+                                            className="text-center text-muted-foreground"
+                                        >
+                                            Belum ada data service
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+                                ) : (
+                                    services.map((service) => (
+                                        <TableRow key={service.id}>
+                                            <TableCell className="font-medium">
+                                                {service.nomor_service}
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatDate(service.tanggal_masuk)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="font-medium">
+                                                        {service.nama_pelanggan}
+                                                    </div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {service.telepon_pelanggan}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <div className="font-medium">
+                                                        {service.merk_hp}
+                                                    </div>
+                                                    <div className="text-sm text-muted-foreground">
+                                                        {service.tipe_hp}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="max-w-xs truncate">
+                                                {service.keluhan}
+                                            </TableCell>
+                                            <TableCell>{service.teknisi}</TableCell>
+                                            <TableCell>
+                                                {formatRupiah(service.total_biaya)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Select
+                                                    value={service.status_service}
+                                                    onValueChange={(value) => handleStatusChange(service.id, value)}
+                                                >
+                                                    <SelectTrigger className="w-[140px]">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="diterima">Diterima</SelectItem>
+                                                        <SelectItem value="dicek">Dicek</SelectItem>
+                                                        <SelectItem value="dikerjakan">Dikerjakan</SelectItem>
+                                                        <SelectItem value="selesai">Selesai</SelectItem>
+                                                        <SelectItem value="diambil">Diambil</SelectItem>
+                                                        <SelectItem value="batal">Batal</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handlePrint(service.id)}
+                                                        title="Print Struk"
+                                                    >
+                                                        <Printer className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            router.visit(
+                                                                `/service/${service.id}/edit`
+                                                            )
+                                                        }
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            handleDelete(
+                                                                service.id,
+                                                                service.nomor_service
+                                                            )
+                                                        }
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
 
-        {/* Print Modal */}
-        <Dialog open={showPrintModal} onOpenChange={setShowPrintModal}>
-            <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Print Struk Service</DialogTitle>
-                </DialogHeader>
-                
-                {selectedService && (
-                    <div className="space-y-4">
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="text-center space-y-1">
-                                <div className="text-sm text-gray-600">No. Service</div>
-                                <div className="text-xl font-bold text-gray-900">
-                                    {selectedService.nomor_service}
+            {/* Print Modal */}
+            <Dialog open={showPrintModal} onOpenChange={setShowPrintModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Print Struk Service</DialogTitle>
+                    </DialogHeader>
+
+                    {selectedService && (
+                        <div className="space-y-4">
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="text-center space-y-1">
+                                    <div className="text-sm text-gray-600">No. Service</div>
+                                    <div className="text-xl font-bold text-gray-900">
+                                        {selectedService.nomor_service}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Pelanggan</span>
-                                <span className="font-medium">{selectedService.nama_pelanggan}</span>
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Pelanggan</span>
+                                    <span className="font-medium">{selectedService.nama_pelanggan}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">HP</span>
+                                    <span className="font-medium">
+                                        {selectedService.merk_hp} {selectedService.tipe_hp}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Total Biaya</span>
+                                    <span className="font-bold text-blue-600">
+                                        Rp {selectedService.total_biaya.toLocaleString('id-ID')}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">HP</span>
-                                <span className="font-medium">
-                                    {selectedService.merk_hp} {selectedService.tipe_hp}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Total Biaya</span>
-                                <span className="font-bold text-blue-600">
-                                    Rp {selectedService.total_biaya.toLocaleString('id-ID')}
-                                </span>
-                            </div>
-                        </div>
 
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={handlePrintStruk}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700"
-                            >
-                                <Printer className="mr-2 h-4 w-4" />
-                                Cetak Struk
-                            </Button>
-                            <Button
-                                onClick={() => setShowPrintModal(false)}
-                                variant="outline"
-                                className="flex-1"
-                            >
-                                Tutup
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={handlePrintStruk}
+                                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                >
+                                    <Printer className="mr-2 h-4 w-4" />
+                                    Cetak Struk
+                                </Button>
+                                <Button
+                                    onClick={() => setShowPrintModal(false)}
+                                    variant="outline"
+                                    className="flex-1"
+                                >
+                                    Tutup
+                                </Button>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </DialogContent>
-        </Dialog>
+                    )}
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
