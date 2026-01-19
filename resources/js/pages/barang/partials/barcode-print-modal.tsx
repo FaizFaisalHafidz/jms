@@ -89,7 +89,7 @@ export function BarcodePrintModal({
 
     const handlePrint = () => {
         const selectedItems = printItems.filter((item) => item.selected);
-        
+
         if (selectedItems.length === 0) {
             alert('Pilih minimal 1 barang untuk dicetak');
             return;
@@ -103,82 +103,114 @@ export function BarcodePrintModal({
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Cetak Barcode</title>
+                <title>Cetak Barcode - Thermal</title>
                 <style>
                     @media print {
                         @page {
-                            margin: 10mm;
+                            size: 80mm auto;
+                            margin: 2mm 0;
+                        }
+                        body {
+                            margin: 0;
                         }
                     }
                     body {
-                        font-family: Arial, sans-serif;
+                        font-family: 'Courier New', monospace;
                         margin: 0;
-                        padding: 20px;
+                        padding: 0;
+                        width: 80mm;
+                        background: white;
                     }
-                    .barcode-grid {
-                        display: grid;
-                        grid-template-columns: repeat(3, 1fr);
-                        gap: 15px;
-                        page-break-inside: avoid;
+                    .barcode-container {
+                        display: flex;
+                        flex-direction: column;
+                        width: 100%;
                     }
                     .barcode-item {
-                        border: 1px solid #ddd;
-                        padding: 10px;
+                        width: 100%;
+                        padding: 5mm 3mm;
                         text-align: center;
                         background: white;
                         page-break-inside: avoid;
+                        border-bottom: 1px dashed #999;
+                    }
+                    .barcode-item:last-child {
+                        border-bottom: none;
                     }
                     .barcode-item h4 {
-                        margin: 5px 0;
-                        font-size: 12px;
+                        margin: 2mm 0;
+                        font-size: 11pt;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        word-wrap: break-word;
+                        line-height: 1.2;
+                    }
+                    .barcode-item .info {
+                        margin: 2mm 0;
+                        font-size: 9pt;
+                        color: #333;
+                    }
+                    .barcode-item .barcode-wrapper {
+                        margin: 3mm 0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }
+                    .barcode-item .price {
+                        margin: 2mm 0;
+                        font-size: 10pt;
                         font-weight: bold;
                     }
-                    .barcode-item p {
-                        margin: 3px 0;
-                        font-size: 10px;
-                        color: #666;
+                    .divider {
+                        margin: 3mm 0;
+                        border-top: 1px dashed #999;
                     }
                 </style>
             </head>
             <body>
-                <div class="barcode-grid">
+                <div class="barcode-container">
                     ${selectedItems
-                        .map((item) => {
-                            const barcodeElements = [];
-                            for (let i = 0; i < item.jumlah; i++) {
-                                barcodeElements.push(`
+                .map((item) => {
+                    const barcodeElements = [];
+                    for (let i = 0; i < item.jumlah; i++) {
+                        barcodeElements.push(`
                                     <div class="barcode-item">
                                         <h4>${item.nama_barang}</h4>
-                                        <p>Kode: ${item.kode_barang}</p>
-                                        <svg id="barcode-${item.id}-${i}"></svg>
+                                        <div class="info">Kode: ${item.kode_barang}</div>
+                                        <div class="barcode-wrapper">
+                                            <svg id="barcode-${item.id}-${i}"></svg>
+                                        </div>
+                                        <div class="price">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.harga_konsumen)}</div>
                                     </div>
                                 `);
-                            }
-                            return barcodeElements.join('');
-                        })
-                        .join('')}
+                    }
+                    return barcodeElements.join('');
+                })
+                .join('')}
                 </div>
                 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
                 <script>
                     window.onload = function() {
                         ${selectedItems
-                            .map((item) => {
-                                const scripts = [];
-                                for (let i = 0; i < item.jumlah; i++) {
-                                    scripts.push(`
+                .map((item) => {
+                    const scripts = [];
+                    for (let i = 0; i < item.jumlah; i++) {
+                        scripts.push(`
                                         JsBarcode("#barcode-${item.id}-${i}", "${item.barcode}", {
                                             format: "CODE128",
-                                            width: 2,
-                                            height: 50,
+                                            width: 1.5,
+                                            height: 40,
                                             displayValue: true,
-                                            fontSize: 12,
-                                            margin: 5
+                                            fontSize: 11,
+                                            margin: 2,
+                                            marginTop: 5,
+                                            marginBottom: 5
                                         });
                                     `);
-                                }
-                                return scripts.join('');
-                            })
-                            .join('')}
+                    }
+                    return scripts.join('');
+                })
+                .join('')}
                         setTimeout(function() {
                             window.print();
                             window.onafterprint = function() {
