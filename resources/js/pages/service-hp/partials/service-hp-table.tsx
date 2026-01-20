@@ -119,7 +119,7 @@ export default function ServiceHpTable({ services }: Props) {
                         font-size: 7px; 
                         width: 49mm;
                         max-width: 49mm;
-                        padding: 1mm 3mm;
+                        padding: 1mm 3mm 1mm 8mm;
                         line-height: 1.1;
                         overflow: hidden;
                         font-weight: bold; /* SEMUA TEBAL */

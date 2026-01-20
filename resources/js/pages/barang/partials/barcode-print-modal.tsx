@@ -159,7 +159,7 @@ export function BarcodePrintModal({
                     }
                     .barcode-item {
                         width: 100%;
-                        padding: 5mm 3mm;
+                        padding: 5mm 3mm 5mm 8mm;
                         text-align: center;
                         background: white;
                         page-break-inside: avoid;

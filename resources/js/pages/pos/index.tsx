@@ -336,7 +336,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                         font-size: 7px; 
                         width: 49mm;
                         max-width: 49mm;
-                        padding: 1mm 3mm;
+                        padding: 1mm 3mm 1mm 8mm;
                         line-height: 1.1;
                         overflow: hidden;
                         font-weight: bold; /* SEMUA TEBAL */
@@ -762,15 +762,15 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                 {calculateTotal() > 0 && jumlahBayar > 0 && (
                                     <div
                                         className={`p-4 border-2 rounded-lg ${calculateKembalian() >= 0
-                                                ? 'bg-green-50 border-green-300'
-                                                : 'bg-red-50 border-red-300'
+                                            ? 'bg-green-50 border-green-300'
+                                            : 'bg-red-50 border-red-300'
                                             }`}
                                     >
                                         <div className="flex justify-between items-center">
                                             <span
                                                 className={`text-sm font-medium ${calculateKembalian() >= 0
-                                                        ? 'text-green-700'
-                                                        : 'text-red-700'
+                                                    ? 'text-green-700'
+                                                    : 'text-red-700'
                                                     }`}
                                             >
                                                 {calculateKembalian() >= 0
@@ -779,8 +779,8 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                             </span>
                                             <span
                                                 className={`text-2xl font-bold ${calculateKembalian() >= 0
-                                                        ? 'text-green-700'
-                                                        : 'text-red-700'
+                                                    ? 'text-green-700'
+                                                    : 'text-red-700'
                                                     }`}
                                             >
                                                 {formatRupiah(
