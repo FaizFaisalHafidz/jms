@@ -194,16 +194,8 @@ class LaporanCabangController extends Controller
             ];
         });
 
-        // Calculate totals per payment method
-        $perMetode = [
-            'tunai' => $transaksiRaw->where('metode_pembayaran', 'tunai')->sum('total_bayar'),
-            'transfer' => $transaksiRaw->where('metode_pembayaran', 'transfer')->sum('total_bayar'),
-            'qris' => $transaksiRaw->where('metode_pembayaran', 'qris')->sum('total_bayar'),
-            'edc' => $transaksiRaw->where('metode_pembayaran', 'edc')->sum('total_bayar'),
-        ];
-
         // Get all services for the period
-        $services = ServiceHp::where('cabang_id', $cabangId)
+        $servicesRaw = ServiceHp::where('cabang_id', $cabangId)
             ->whereIn('status_service', ['selesai', 'diambil'])
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
@@ -213,15 +205,25 @@ class LaporanCabangController extends Controller
                       });
             })
             ->orderBy('tanggal_masuk', 'asc')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'nomor_service' => $item->nomor_service,
-                    'tanggal' => $item->tanggal_selesai ?? $item->tanggal_masuk,
-                    'total_biaya' => $item->total_biaya,
-                    'pelanggan' => $item->nama_pelanggan,
-                ];
-            });
+            ->get();
+
+        $services = $servicesRaw->map(function ($item) {
+            return [
+                'nomor_service' => $item->nomor_service,
+                'tanggal' => $item->tanggal_selesai ?? $item->tanggal_masuk,
+                'total_biaya' => $item->total_biaya,
+                'metode_pembayaran' => $item->metode_pembayaran,
+                'pelanggan' => $item->nama_pelanggan,
+            ];
+        });
+
+        // Calculate totals per payment method (Combined Sales + Service)
+        $perMetode = [
+            'tunai' => $transaksiRaw->where('metode_pembayaran', 'tunai')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'tunai')->sum('total_biaya'),
+            'transfer' => $transaksiRaw->where('metode_pembayaran', 'transfer')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'transfer')->sum('total_biaya'),
+            'qris' => $transaksiRaw->where('metode_pembayaran', 'qris')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'qris')->sum('total_biaya'),
+            'edc' => $transaksiRaw->where('metode_pembayaran', 'edc')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'edc')->sum('total_biaya'),
+        ];
 
         // Total calculations
         $totalPenjualan = $transaksi->sum('total_harga');
@@ -242,9 +244,9 @@ class LaporanCabangController extends Controller
             ->sum('total_nilai_retur');
 
         // Calculate Cash Flow (Estimasi)
-        // Asumsi: Service dibayar tunai (kecuali ada data lain). Transaksi via tunai.
+        // Hanya hitung service yang dibayar tunai
         $totalTunai = $perMetode['tunai'];
-        $sisaUangCash = ($totalTunai + $totalService) - $totalPengeluaran - $totalRetur;
+        $sisaUangCash = ($totalTunai + $totalServiceTunai) - $totalPengeluaran - $totalRetur;
 
         return response()->json([
             'cabang' => [
@@ -270,8 +272,7 @@ class LaporanCabangController extends Controller
                 'jumlah_service' => $services->count(),
                 'jumlah_pengeluaran' => $expenses->count(),
                 'cash_flow' => [
-                    'masuk_penjualan_tunai' => $totalTunai,
-                    'masuk_service' => $totalService,
+                    'masuk_tunai' => $totalTunai,
                     'keluar_pengeluaran' => $totalPengeluaran,
                     'keluar_retur' => $totalRetur,
                     'sisa_uang_cash' => $sisaUangCash

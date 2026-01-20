@@ -63,8 +63,7 @@ interface ClosingData {
         jumlah_service: number;
         jumlah_pengeluaran: number;
         cash_flow: {
-            masuk_penjualan_tunai: number;
-            masuk_service: number;
+            masuk_tunai: number;
             keluar_pengeluaran: number;
             keluar_retur: number;
             sisa_uang_cash: number;
@@ -319,15 +318,37 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                     </div>
 
                     <div class="line"></div>
+                    <div class="section-title center">RINCIAN KEUANGAN</div>
+
+                    <div class="row item-row">
+                        <span>Total Tunai (Cash)</span>
+                        <span>${formatRupiah(data.per_metode.tunai)}</span>
+                    </div>
+                    ${data.per_metode.transfer > 0 ? `
+                        <div class="row item-row">
+                            <span>Total Transfer</span>
+                            <span>${formatRupiah(data.per_metode.transfer)}</span>
+                        </div>
+                    ` : ''}
+                    ${data.per_metode.qris > 0 ? `
+                        <div class="row item-row">
+                            <span>Total QRIS</span>
+                            <span>${formatRupiah(data.per_metode.qris)}</span>
+                        </div>
+                    ` : ''}
+                    ${data.per_metode.edc > 0 ? `
+                        <div class="row item-row">
+                            <span>Total EDC</span>
+                            <span>${formatRupiah(data.per_metode.edc)}</span>
+                        </div>
+                    ` : ''}
+
+                    <div class="line"></div>
                     <div class="section-title center">SISA UANG CASH</div>
                     
                     <div class="row item-row">
-                        <span>Cash (Penjualan)</span>
-                        <span>${formatRupiah(data.summary.cash_flow.masuk_penjualan_tunai)}</span>
-                    </div>
-                    <div class="row item-row">
-                        <span>Cash (Service)</span>
-                        <span>${formatRupiah(data.summary.cash_flow.masuk_service)}</span>
+                        <span>Masuk (Tunai)</span>
+                        <span>${formatRupiah(data.summary.cash_flow.masuk_tunai)}</span>
                     </div>
                      <div class="row item-row">
                         <span>Pengeluaran</span>

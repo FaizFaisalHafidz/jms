@@ -36,6 +36,7 @@ interface Service {
     tanggal_selesai: string | null;
     tanggal_diambil: string | null;
     keterangan: string | null;
+    metode_pembayaran: string;
 }
 
 interface Teknisi {
@@ -66,6 +67,7 @@ export default function ServiceHpEdit({ service, teknisi }: Props) {
         tanggal_selesai: service.tanggal_selesai?.slice(0, 16) || '',
         tanggal_diambil: service.tanggal_diambil?.slice(0, 16) || '',
         keterangan: service.keterangan || '',
+        metode_pembayaran: service.metode_pembayaran || 'tunai',
     });
 
     const handleSubmit: FormEventHandler = (e) => {
@@ -332,6 +334,26 @@ export default function ServiceHpEdit({ service, teknisi }: Props) {
                                             }
                                             min={0}
                                         />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Metode Pembayaran</Label>
+                                        <Select
+                                            value={data.metode_pembayaran}
+                                            onValueChange={(value) =>
+                                                setData('metode_pembayaran', value)
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih metode" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="tunai">Tunai</SelectItem>
+                                                <SelectItem value="transfer">Transfer</SelectItem>
+                                                <SelectItem value="qris">QRIS</SelectItem>
+                                                <SelectItem value="edc">EDC</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div className="pt-4 border-t">

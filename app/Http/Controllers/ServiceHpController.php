@@ -98,6 +98,7 @@ class ServiceHpController extends Controller
             'keterangan' => 'nullable|string',
             'barang_id' => 'nullable|exists:barang,id',
             'jumlah_barang' => 'nullable|integer|min:1',
+            'metode_pembayaran' => 'required|in:tunai,transfer,qris,edc',
         ]);
 
         DB::beginTransaction();
@@ -158,6 +159,7 @@ class ServiceHpController extends Controller
                 'biaya_spare_part' => $biayaSparePart,
                 'biaya_jasa' => $biayaJasa,
                 'total_biaya' => $totalBiaya,
+                'metode_pembayaran' => $request->metode_pembayaran,
                 'laba_service' => $labaService,
                 'status_service' => 'diterima',
                 'teknisi_id' => $request->teknisi_id,
@@ -188,6 +190,7 @@ class ServiceHpController extends Controller
                         'biaya_spare_part' => $service->biaya_spare_part,
                         'biaya_jasa' => $service->biaya_jasa,
                         'total_biaya' => $service->total_biaya,
+                        'metode_pembayaran' => $service->metode_pembayaran,
                         'teknisi' => $service->teknisi ? $service->teknisi->name : '-',
                         'kasir' => Auth::user()->name,
                     ],
@@ -274,6 +277,7 @@ class ServiceHpController extends Controller
             'keterangan' => 'nullable|string',
             'barang_id' => 'nullable|exists:barang,id',
             'jumlah_barang' => 'nullable|integer|min:1',
+            'metode_pembayaran' => 'required|in:tunai,transfer,qris,edc',
         ]);
 
         DB::beginTransaction();
@@ -333,6 +337,7 @@ class ServiceHpController extends Controller
                 'biaya_spare_part' => $biayaSparePart,
                 'biaya_jasa' => $biayaJasa,
                 'total_biaya' => $totalBiaya,
+                'metode_pembayaran' => $request->metode_pembayaran,
                 'status_service' => $request->status_service,
                 'teknisi_id' => $request->teknisi_id,
                 'tanggal_selesai' => $request->tanggal_selesai,
@@ -409,6 +414,7 @@ class ServiceHpController extends Controller
             'biaya_spare_part' => $serviceHp->biaya_spare_part,
             'biaya_jasa' => $serviceHp->biaya_jasa,
             'total_biaya' => $serviceHp->total_biaya,
+            'metode_pembayaran' => $serviceHp->metode_pembayaran,
             'status_service' => $serviceHp->status_service,
             'teknisi' => $serviceHp->teknisi ? $serviceHp->teknisi->name : null,
             'tanggal_selesai' => $serviceHp->tanggal_selesai,

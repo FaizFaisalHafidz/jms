@@ -26,6 +26,7 @@ class ServiceHp extends Model
         'biaya_spare_part',
         'biaya_jasa',
         'total_biaya',
+        'metode_pembayaran',
         'laba_service',
         'status_service',
         'tanggal_selesai',

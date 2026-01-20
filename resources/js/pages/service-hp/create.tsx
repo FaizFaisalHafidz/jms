@@ -70,7 +70,7 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [serviceData, setServiceData] = useState<ServiceData | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     const { data, setData, reset, processing, errors } = useForm({
         tanggal_masuk: new Date().toISOString().slice(0, 16),
         nama_pelanggan: '',
@@ -87,6 +87,7 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
         biaya_jasa: 0,
         teknisi_id: '',
         keterangan: '',
+        metode_pembayaran: 'tunai',
     });
 
     const handleSearchBarang = async (keyword: string) => {
@@ -114,11 +115,11 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
             dari_barang: true,
             barang_id: barang.id,
         };
-        
+
         const updatedParts = [...spareParts, newPart];
         setSpareParts(updatedParts);
         updateSparePartData(updatedParts);
-        
+
         setSearchKeyword('');
         setSearchResults([]);
         setShowResults(false);
@@ -131,12 +132,12 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
             biaya: 0,
             dari_barang: false,
         };
-        
+
         setSpareParts([...spareParts, newPart]);
     };
 
     const handleUpdatePart = (id: string, field: 'nama' | 'biaya', value: string | number) => {
-        const updatedParts = spareParts.map(part => 
+        const updatedParts = spareParts.map(part =>
             part.id === id ? { ...part, [field]: value } : part
         );
         setSpareParts(updatedParts);
@@ -152,10 +153,10 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
     const updateSparePartData = (parts: SparePart[]) => {
         const totalBiaya = parts.reduce((sum, part) => sum + (part.biaya || 0), 0);
         const partNames = parts.map(p => p.nama).filter(n => n).join(', ');
-        
+
         // Ambil barang pertama yang dari inventory (dari_barang = true)
         const barangDariInventory = parts.find(p => p.dari_barang && p.barang_id);
-        
+
         setData({
             ...data,
             biaya_spare_part: totalBiaya,
@@ -485,6 +486,26 @@ export default function ServiceHpCreate({ teknisi, cabang_nama, cabang_alamat, c
                                             }
                                             min={0}
                                         />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Metode Pembayaran</Label>
+                                        <Select
+                                            value={data.metode_pembayaran}
+                                            onValueChange={(value) =>
+                                                setData('metode_pembayaran', value)
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih metode" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="tunai">Tunai</SelectItem>
+                                                <SelectItem value="transfer">Transfer</SelectItem>
+                                                <SelectItem value="qris">QRIS</SelectItem>
+                                                <SelectItem value="edc">EDC</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     <div className="pt-4 border-t">

@@ -42,6 +42,7 @@ interface Service {
     teknisi: string;
     tanggal_selesai: string | null;
     tanggal_diambil: string | null;
+    metode_pembayaran: string;
 }
 
 interface ServiceDetail extends Service {
@@ -208,6 +209,11 @@ export default function ServiceHpTable({ services }: Props) {
                 <div class="row">
                     <span>Biaya Jasa</span>
                     <span>Rp ${selectedService.biaya_jasa.toLocaleString('id-ID')}</span>
+                </div>
+                
+                <div class="row">
+                    <span>Metode Bayar</span>
+                    <span>${selectedService.metode_pembayaran ? selectedService.metode_pembayaran.toUpperCase() : 'TUNAI'}</span>
                 </div>
                 
                 <div class="line"></div>
@@ -454,6 +460,12 @@ export default function ServiceHpTable({ services }: Props) {
                                     <span className="text-gray-600">Total Biaya</span>
                                     <span className="font-bold text-blue-600">
                                         Rp {selectedService.total_biaya.toLocaleString('id-ID')}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Metode Bayar</span>
+                                    <span className="font-medium">
+                                        {selectedService.metode_pembayaran ? selectedService.metode_pembayaran.toUpperCase() : 'TUNAI'}
                                     </span>
                                 </div>
                             </div>
