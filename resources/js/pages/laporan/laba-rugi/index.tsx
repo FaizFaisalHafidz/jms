@@ -1,38 +1,36 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import LaporanLayout from "@/layouts/laporan-layout";
 import { cn } from '@/lib/utils';
 import { PageProps } from "@/types";
 import { Head, router } from "@inertiajs/react";
-import { Activity, Calendar, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 interface LabaPerCabang {
   nama_cabang: string;
   kota: string;
-  pendapatan: number;
-  laba_kotor: number;
-  biaya_operasional: number;
-  laba_bersih: number;
+  omzet: number;
+  pengeluaran: number;
+  sisa: number;
 }
 
-interface GrafikData {
-  tanggal: string;
-  laba_kotor: number;
-  pendapatan_service: number;
-  biaya_operasional: number;
-  laba_bersih: number;
+interface Service {
+  nomor_service: string;
+  total_biaya: number;
+  metode_pembayaran: string;
 }
 
-interface BreakdownData {
+interface Pengeluaran {
+  keterangan: string;
+  jumlah: number;
   kategori_pengeluaran: string;
-  total: number;
 }
 
 interface Props extends PageProps {
@@ -46,18 +44,34 @@ interface Props extends PageProps {
     penjualan: number;
     service: number;
     retur: number;
-    total_pendapatan: number;
-    laba_kotor_penjualan: number;
-    laba_service: number;
+    total_omzet: number;
+    biaya_spare_part: number;
+    biaya_jasa: number;
+    total_diskon: number;
     biaya_operasional: number;
-    laba_bersih: number;
+    penjualan_metode: {
+      tunai: number;
+      transfer: number;
+      qris: number;
+      edc: number;
+    };
+    per_metode: {
+      tunai: number;
+      transfer: number;
+      qris: number;
+      edc: number;
+    };
+    total_tunai: number;
+    sisa_kas: number;
+    sisa: number;
   };
+  list_service: Service[];
+  list_pengeluaran: Pengeluaran[];
   laba_per_cabang: LabaPerCabang[];
-  grafik_laba: GrafikData[];
-  breakdown_pengeluaran: BreakdownData[];
+  breakdown_pengeluaran: any[];
 }
 
-export default function LaporanLabaRugiPage({ filters, stats, laba_per_cabang, grafik_laba, breakdown_pengeluaran }: Props) {
+export default function LaporanLabaRugiPage({ filters, stats, list_service, list_pengeluaran, laba_per_cabang }: Props) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
@@ -143,23 +157,23 @@ export default function LaporanLabaRugiPage({ filters, stats, laba_per_cabang, g
   return (
     <>
       <Head title="Laporan Laba Rugi" />
-      <div className="space-y-4">
-        {/* Filter Section - Compact */}
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-700">
+      <div className="space-y-3">
+        {/* Filter Section */}
+        <Card>
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="h-3.5 w-3.5 text-gray-500" />
+              <span className="text-xs font-medium text-gray-700">
                 {formatDate()}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-2">
               <Select
                 value={filters.filter_type}
                 onValueChange={handleFilterTypeChange}
               >
-                <SelectTrigger className="h-9 text-xs">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder="Tipe" />
                 </SelectTrigger>
                 <SelectContent>
@@ -173,36 +187,34 @@ export default function LaporanLabaRugiPage({ filters, stats, laba_per_cabang, g
                   type="date"
                   value={filters.tanggal || ''}
                   onChange={(e) => handleDateChange(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-8 text-xs"
                 />
               ) : (
-                <>
-                  <Select
-                    value={filters.tahun || ''}
-                    onValueChange={(value) => handleMonthFilterChange('tahun', value)}
-                  >
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Tahun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </>
+                <Select
+                  value={filters.tahun || ''}
+                  onValueChange={(value) => handleMonthFilterChange('tahun', value)}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Tahun" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
-            
+
             {filters.filter_type === 'bulanan' && (
               <div className="mt-2">
                 <Select
                   value={filters.bulan || ''}
                   onValueChange={(value) => handleMonthFilterChange('bulan', value)}
                 >
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Bulan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -218,175 +230,201 @@ export default function LaporanLabaRugiPage({ filters, stats, laba_per_cabang, g
           </CardContent>
         </Card>
 
-        {/* Main Stats - Mobile Optimized */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Omzet */}
-          <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div className="p-2 bg-blue-500 rounded-lg">
-                  <DollarSign className="h-4 w-4 text-white" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] text-gray-600 font-medium">Omzet</p>
-                <p className="text-sm font-bold text-gray-900 leading-tight">
-                  {formatRupiah(stats.total_pendapatan).replace('Rp', 'Rp ')}
-                </p>
-                <p className="text-[9px] text-gray-500">
-                  Penjualan + Service
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Laba Bersih */}
-          <Card className={cn(
-            "border-0 shadow-sm",
-            stats.laba_bersih >= 0 
-              ? "bg-gradient-to-br from-green-50 to-green-100/50" 
-              : "bg-gradient-to-br from-red-50 to-red-100/50"
-          )}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div className={cn(
-                  "p-2 rounded-lg",
-                  stats.laba_bersih >= 0 ? "bg-green-500" : "bg-red-500"
-                )}>
-                  {stats.laba_bersih >= 0 ? (
-                    <TrendingUp className="h-4 w-4 text-white" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 text-white" />
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] text-gray-600 font-medium">Laba Bersih</p>
-                <p className={cn(
-                  "text-sm font-bold leading-tight",
-                  stats.laba_bersih >= 0 ? "text-green-700" : "text-red-700"
-                )}>
-                  {formatRupiah(stats.laba_bersih).replace('Rp', 'Rp ')}
-                </p>
-                <p className="text-[9px] text-gray-500">
-                  Setelah operasional
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Breakdown Laba - Compact Cards */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Rincian Laba
-            </CardTitle>
+        {/* Total Penjualan & Metode Bayar */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-700">Total Penjualan</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Laba Penjualan */}
-            <div className="flex items-center justify-between p-2.5 bg-green-50 rounded-lg">
-              <div>
-                <p className="text-[10px] text-gray-600 mb-0.5">Laba Penjualan</p>
-                <p className="text-xs font-bold text-green-700">
-                  {formatRupiah(stats.laba_kotor_penjualan)}
-                </p>
-              </div>
-              <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              </div>
+          <CardContent className="space-y-1.5 text-xs">
+            <div className="flex justify-between py-1 font-bold">
+              <span>Total Penjualan</span>
+              <span>{formatRupiah(stats.penjualan)}</span>
             </div>
 
-            {/* Laba Service */}
-            <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-lg">
-              <div>
-                <p className="text-[10px] text-gray-600 mb-0.5">Laba Service</p>
-                <p className="text-xs font-bold text-purple-700">
-                  {formatRupiah(stats.laba_service)}
-                </p>
-              </div>
-              <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <Activity className="h-4 w-4 text-purple-600" />
-              </div>
-            </div>
-
-            {/* Biaya Operasional */}
-            <div className="flex items-center justify-between p-2.5 bg-orange-50 rounded-lg">
-              <div>
-                <p className="text-[10px] text-gray-600 mb-0.5">Biaya Operasional</p>
-                <p className="text-xs font-bold text-orange-700">
-                  {formatRupiah(stats.biaya_operasional)}
-                </p>
-              </div>
-              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <TrendingDown className="h-4 w-4 text-orange-600" />
-              </div>
+            <div className="pt-1 border-t">
+              <div className="text-[10px] font-semibold text-gray-600 mb-1">PER METODE BAYAR:</div>
+              {stats.penjualan_metode.tunai > 0 && (
+                <div className="flex justify-between py-0.5 pl-2">
+                  <span className="text-gray-600">Tunai</span>
+                  <span className="font-medium">{formatRupiah(stats.penjualan_metode.tunai)}</span>
+                </div>
+              )}
+              {stats.penjualan_metode.transfer > 0 && (
+                <div className="flex justify-between py-0.5 pl-2">
+                  <span className="text-gray-600">Transfer</span>
+                  <span className="font-medium">{formatRupiah(stats.penjualan_metode.transfer)}</span>
+                </div>
+              )}
+              {stats.penjualan_metode.qris > 0 && (
+                <div className="flex justify-between py-0.5 pl-2">
+                  <span className="text-gray-600">QRIS</span>
+                  <span className="font-medium">{formatRupiah(stats.penjualan_metode.qris)}</span>
+                </div>
+              )}
+              {stats.penjualan_metode.edc > 0 && (
+                <div className="flex justify-between py-0.5 pl-2">
+                  <span className="text-gray-600">EDC</span>
+                  <span className="font-medium">{formatRupiah(stats.penjualan_metode.edc)}</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Laba per Cabang */}
-        {laba_per_cabang && laba_per_cabang.length > 0 && (
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Laba per Cabang</CardTitle>
+        {/* Service HP */}
+        {list_service && list_service.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-gray-700">
+                SERVICE HP ({list_service.length})
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {laba_per_cabang.map((cabang, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">{cabang.nama_cabang}</p>
-                    <p className="text-xs text-gray-500">{cabang.kota}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={cn(
-                      "text-sm font-bold",
-                      cabang.laba_bersih >= 0 ? "text-green-600" : "text-red-600"
-                    )}>
-                      {formatRupiah(cabang.laba_bersih)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Omzet: {formatRupiah(cabang.pendapatan)}
-                    </p>
-                  </div>
+            <CardContent className="space-y-1 text-xs">
+              {list_service.map((service, index) => (
+                <div key={index} className="flex justify-between py-0.5">
+                  <span className="text-gray-600">{service.nomor_service}</span>
+                  <span className="font-medium">{formatRupiah(service.total_biaya)}</span>
                 </div>
               ))}
+              <div className="flex justify-between py-1 border-t font-semibold mt-1">
+                <span>Total Service</span>
+                <span>{formatRupiah(stats.service)}</span>
+              </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Breakdown Pengeluaran */}
-        {breakdown_pengeluaran && breakdown_pengeluaran.length > 0 && (
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Kategori Pengeluaran</CardTitle>
+        {/* Pengeluaran */}
+        {list_pengeluaran && list_pengeluaran.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-gray-700">
+                PENGELUARAN ({list_pengeluaran.length})
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {breakdown_pengeluaran.map((item, index) => {
-                const percentage = (item.total / stats.biaya_operasional) * 100;
-                return (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-gray-700">
-                        {item.kategori_pengeluaran}
-                      </p>
-                      <p className="text-xs font-bold text-gray-900">
-                        {formatRupiah(item.total)}
-                      </p>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-orange-500 h-1.5 rounded-full transition-all"
-                        style={{ width: `${percentage}%` }}
-                      />
+            <CardContent className="space-y-1 text-xs">
+              {list_pengeluaran.map((item, index) => (
+                <div key={index} className="flex justify-between py-0.5">
+                  <span className="text-gray-600 truncate max-w-[200px]">
+                    {item.keterangan || item.kategori_pengeluaran}
+                  </span>
+                  <span className="font-medium">{formatRupiah(item.jumlah)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between py-1 border-t font-semibold mt-1">
+                <span>Total Pengeluaran</span>
+                <span>{formatRupiah(stats.biaya_operasional)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Ringkasan Pendapatan */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-700">Ringkasan</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-xs">
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Total Pendapatan</span>
+              <span className="font-semibold">{formatRupiah(stats.total_omzet)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Total Pengeluaran</span>
+              <span className="font-semibold text-red-600">-{formatRupiah(stats.biaya_operasional)}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-t-2 border-gray-900">
+              <span className={cn("font-bold", stats.sisa >= 0 ? "text-gray-900" : "text-red-600")}>
+                LABA BERSIH
+              </span>
+              <span className={cn("font-bold", stats.sisa >= 0 ? "text-gray-900" : "text-red-600")}>
+                {formatRupiah(stats.sisa)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rincian Keuangan */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-700">RINCIAN KEUANGAN</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-xs">
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Total Tunai (Cash)</span>
+              <span className="font-semibold">{formatRupiah(stats.per_metode.tunai)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Total Transfer</span>
+              <span className="font-semibold">{formatRupiah(stats.per_metode.transfer)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Total QRIS</span>
+              <span className="font-semibold">{formatRupiah(stats.per_metode.qris)}</span>
+            </div>
+            {stats.per_metode.edc > 0 && (
+              <div className="flex justify-between py-1">
+                <span className="text-gray-600">Total EDC</span>
+                <span className="font-semibold">{formatRupiah(stats.per_metode.edc)}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sisa Uang Cash */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-700">SISA UANG CASH</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-xs">
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Masuk (Tunai)</span>
+              <span className="font-semibold">{formatRupiah(stats.total_tunai)}</span>
+            </div>
+            <div className="flex justify-between py-1">
+              <span className="text-gray-600">Pengeluaran</span>
+              <span className="font-semibold text-red-600">-{formatRupiah(stats.biaya_operasional)}</span>
+            </div>
+            <div className="flex justify-between py-1.5 border-t-2 border-gray-900">
+              <span className={cn("font-bold", stats.sisa_kas >= 0 ? "text-gray-900" : "text-red-600")}>
+                SISA CASH
+              </span>
+              <span className={cn("font-bold", stats.sisa_kas >= 0 ? "text-gray-900" : "text-red-600")}>
+                {formatRupiah(stats.sisa_kas)}
+              </span>
+            </div>
+            <div className="text-[10px] text-gray-500 pt-0.5">
+              Estimasi uang tunai yang seharusnya ada di kas
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sisa per Cabang */}
+        {laba_per_cabang && laba_per_cabang.length > 1 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-gray-700">Per Cabang</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              {laba_per_cabang.map((cabang, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded border"
+                >
+                  <div>
+                    <div className="font-medium text-gray-900">{cabang.nama_cabang}</div>
+                    <div className="text-[10px] text-gray-500">Omzet: {formatRupiah(cabang.omzet)}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className={cn(
+                      "font-semibold",
+                      cabang.sisa >= 0 ? "text-gray-900" : "text-red-600"
+                    )}>
+                      {formatRupiah(cabang.sisa)}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}

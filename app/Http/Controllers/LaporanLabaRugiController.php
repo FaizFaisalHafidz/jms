@@ -30,16 +30,16 @@ class LaporanLabaRugiController extends Controller
             $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
         }
 
-        // Pendapatan dari Penjualan
+        // ========================================
+        // PENDAPATAN DARI PENJUALAN
+        // ========================================
         $penjualan = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
             ->sum('total_bayar');
-        
-        // Laba Kotor dari Penjualan (sudah dihitung saat transaksi)
-        $labaKotorPenjualan = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
-            ->sum('total_laba');
 
-        // Pendapatan dari Service
-        $service = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+        // ========================================
+        // PENDAPATAN DARI SERVICE HP
+        // ========================================
+        $serviceData = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {
@@ -47,45 +47,127 @@ class LaporanLabaRugiController extends Controller
                             ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
                       });
             })
-            ->sum('total_biaya');
+            ->selectRaw('
+                SUM(total_biaya) as total_service,
+                SUM(biaya_spare_part) as total_spare_part,
+                SUM(biaya_jasa) as total_jasa_db
+            ')
+            ->first();
         
-        // Laba dari Service (sudah dikurangi modal spare part jika pakai inventory)
-        $labaService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
-            ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
-                      ->orWhere(function($q) use ($startDate, $endDate) {
-                          $q->whereNull('tanggal_selesai')
-                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
-                      });
-            })
-            ->sum('laba_service');
+        $service = $serviceData->total_service ?? 0;
+        $biayaSparePart = $serviceData->total_spare_part ?? 0;
+        
+        // Hitung biaya jasa = total - spare part
+        $biayaJasa = $service - $biayaSparePart;
 
-        // Retur penjualan (pengurang pendapatan)
+        // ========================================
+        // RETUR
+        // ========================================
         $retur = ReturPenjualan::where('status_retur', 'disetujui')
             ->where('jenis_retur', 'uang_kembali')
             ->whereBetween('tanggal_retur', [$startDate, $endDate])
             ->sum('total_nilai_retur');
 
-        $totalPendapatan = $penjualan + $service - $retur;
+        // Total diskon yang diberikan
+        $totalDiskon = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->sum('diskon');
 
-        // Biaya Operasional (tidak termasuk pembelian barang)
+        // ========================================
+        // TOTAL OMZET
+        // ========================================
+        $totalOmzet = $penjualan + $service - $retur;
+
+        // ========================================
+        // BIAYA OPERASIONAL
+        // ========================================
         $biayaOperasional = Pengeluaran::whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
             ->sum('jumlah');
 
-        // Laba Bersih = Laba Kotor Penjualan + Laba Service - Biaya Operasional - Retur
-        $labaBersih = $labaKotorPenjualan + $labaService - $biayaOperasional - $retur;
+        // ========================================
+        // BREAKDOWN PER METODE PEMBAYARAN
+        // ========================================
+        // Penjualan per metode
+        $penjualanPerMetode = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->selectRaw('
+                metode_pembayaran,
+                SUM(total_bayar) as total
+            ')
+            ->groupBy('metode_pembayaran')
+            ->get()
+            ->pluck('total', 'metode_pembayaran');
 
-        // Laba per Cabang
+        // Service per metode
+        $servicePerMetode = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function($q) use ($startDate, $endDate) {
+                          $q->whereNull('tanggal_selesai')
+                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
+                      });
+            })
+            ->selectRaw('
+                metode_pembayaran,
+                SUM(total_biaya) as total
+            ')
+            ->groupBy('metode_pembayaran')
+            ->get()
+            ->pluck('total', 'metode_pembayaran');
+
+        // Gabungkan total per metode (penjualan + service)
+        $perMetode = [
+            'tunai' => ($penjualanPerMetode['tunai'] ?? 0) + ($servicePerMetode['tunai'] ?? 0),
+            'transfer' => ($penjualanPerMetode['transfer'] ?? 0) + ($servicePerMetode['transfer'] ?? 0),
+            'qris' => ($penjualanPerMetode['qris'] ?? 0) + ($servicePerMetode['qris'] ?? 0),
+            'edc' => ($penjualanPerMetode['edc'] ?? 0) + ($servicePerMetode['edc'] ?? 0),
+        ];
+
+        // Breakdown penjualan saja per metode (untuk ditampilkan)
+        $penjualanMetode = [
+            'tunai' => $penjualanPerMetode['tunai'] ?? 0,
+            'transfer' => $penjualanPerMetode['transfer'] ?? 0,
+            'qris' => $penjualanPerMetode['qris'] ?? 0,
+            'edc' => $penjualanPerMetode['edc'] ?? 0,
+        ];
+
+        // ========================================
+        // DETAIL SERVICE HP
+        // ========================================
+        $listService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function($q) use ($startDate, $endDate) {
+                          $q->whereNull('tanggal_selesai')
+                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
+                      });
+            })
+            ->orderBy('tanggal_masuk')
+            ->get(['nomor_service', 'total_biaya', 'metode_pembayaran']);
+
+        // ========================================
+        // DETAIL PENGELUARAN
+        // ========================================
+        $listPengeluaran = Pengeluaran::whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
+            ->orderBy('tanggal_pengeluaran')
+            ->get(['keterangan', 'jumlah', 'kategori_pengeluaran']);
+
+        // Total uang tunai (dari penjualan + service)
+        $totalTunai = $perMetode['tunai'];
+        
+        // Sisa kas = tunai - pengeluaran
+        $sisaKas = $totalTunai - $biayaOperasional;
+
+        // ========================================
+        // SISA (OMZET - PENGELUARAN)
+        // ========================================
+        $sisa = $totalOmzet - $biayaOperasional;
+
+        // Laba per Cabang (sederhana: omzet - pengeluaran)
         $labaPerCabang = Cabang::where('status_aktif', true)
             ->get()
             ->map(function($cabang) use ($startDate, $endDate) {
                 $penjualanCabang = Transaksi::where('cabang_id', $cabang->id)
                     ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
                     ->sum('total_bayar');
-                
-                $labaKotorCabang = Transaksi::where('cabang_id', $cabang->id)
-                    ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
-                    ->sum('total_laba');
 
                 $serviceCabang = ServiceHp::where('cabang_id', $cabang->id)
                     ->whereIn('status_service', ['selesai', 'diambil'])
@@ -108,44 +190,17 @@ class LaporanLabaRugiController extends Controller
                     ->whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
                     ->sum('jumlah');
 
-                $pendapatan = $penjualanCabang + $serviceCabang - $returCabang;
-                $labaBersih = $labaKotorCabang + $serviceCabang - $pengeluaranCabang - $returCabang;
+                $omzetCabang = $penjualanCabang + $serviceCabang - $returCabang;
+                $sisaCabang = $omzetCabang - $pengeluaranCabang;
 
                 return [
                     'nama_cabang' => $cabang->nama_cabang,
                     'kota' => $cabang->kota,
-                    'pendapatan' => $pendapatan,
-                    'laba_kotor' => $labaKotorCabang,
-                    'biaya_operasional' => $pengeluaranCabang,
-                    'laba_bersih' => $labaBersih,
+                    'omzet' => $omzetCabang,
+                    'pengeluaran' => $pengeluaranCabang,
+                    'sisa' => $sisaCabang,
                 ];
             });
-
-        // Grafik Laba Harian
-        $grafikLaba = [];
-        $currentDate = $startDate->copy();
-        while ($currentDate <= $endDate) {
-            $dayStart = $currentDate->copy()->startOfDay();
-            $dayEnd = $currentDate->copy()->endOfDay();
-
-            $dayLabaKotor = Transaksi::whereBetween('tanggal_transaksi', [$dayStart, $dayEnd])->sum('total_laba');
-            $dayService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
-                ->whereBetween('tanggal_masuk', [$dayStart, $dayEnd])
-                ->sum('total_biaya');
-            $dayPengeluaran = Pengeluaran::whereBetween('tanggal_pengeluaran', [$dayStart, $dayEnd])->sum('jumlah');
-
-            $dayLabaBersih = $dayLabaKotor + $dayService - $dayPengeluaran;
-
-            $grafikLaba[] = [
-                'tanggal' => $currentDate->format('Y-m-d'),
-                'laba_kotor' => $dayLabaKotor,
-                'pendapatan_service' => $dayService,
-                'biaya_operasional' => $dayPengeluaran,
-                'laba_bersih' => $dayLabaBersih,
-            ];
-
-            $currentDate->addDay();
-        }
 
         // Breakdown Pengeluaran
         $breakdownPengeluaran = Pengeluaran::whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
@@ -161,18 +216,34 @@ class LaporanLabaRugiController extends Controller
                 'bulan' => $filterType === 'bulanan' ? ($request->input('bulan', date('m'))) : null,
             ],
             'stats' => [
+                // Pendapatan
                 'penjualan' => $penjualan,
                 'service' => $service,
                 'retur' => $retur,
-                'total_pendapatan' => $totalPendapatan,
-                'laba_kotor_penjualan' => $labaKotorPenjualan,
-                'laba_service' => $labaService,
+                'total_omzet' => $totalOmzet,
+                
+                // Breakdown Service
+                'biaya_spare_part' => $biayaSparePart,
+                'biaya_jasa' => $biayaJasa,
+                
+                // Biaya & Diskon
+                'total_diskon' => $totalDiskon,
                 'biaya_operasional' => $biayaOperasional,
-                'laba_bersih' => $labaBersih,
+                
+                // Breakdown Per Metode Pembayaran
+                'penjualan_metode' => $penjualanMetode,  // Penjualan saja per metode
+                'per_metode' => $perMetode,              // Total (penjualan + service) per metode
+                'total_tunai' => $totalTunai,
+                'sisa_kas' => $sisaKas,
+                
+                // Sisa
+                'sisa' => $sisa,
             ],
+            'list_service' => $listService,
+            'list_pengeluaran' => $listPengeluaran,
             'laba_per_cabang' => $labaPerCabang,
-            'grafik_laba' => $grafikLaba,
             'breakdown_pengeluaran' => $breakdownPengeluaran,
         ]);
     }
 }
+
