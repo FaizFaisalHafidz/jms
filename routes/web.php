@@ -69,9 +69,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Retur Penjualan Routes
     Route::get('retur-penjualan/create', [\App\Http\Controllers\ReturPenjualanController::class, 'create'])->name('retur-penjualan.create');
+    Route::post('retur-penjualan/search-barang', [\App\Http\Controllers\ReturPenjualanController::class, 'searchBarang'])->name('retur-penjualan.search-barang');
     Route::get('retur-penjualan/{id}/transaksi-detail', [\App\Http\Controllers\ReturPenjualanController::class, 'getTransaksiDetail'])->name('retur-penjualan.transaksi-detail');
     Route::post('retur-penjualan/{id}/approve', [\App\Http\Controllers\ReturPenjualanController::class, 'approve'])->name('retur-penjualan.approve');
     Route::post('retur-penjualan/{id}/reject', [\App\Http\Controllers\ReturPenjualanController::class, 'reject'])->name('retur-penjualan.reject');
+    Route::get('retur-penjualan/{id}/print-exchange', [\App\Http\Controllers\ReturPenjualanController::class, 'printExchange'])->name('retur-penjualan.print-exchange');
     Route::resource('retur-penjualan', \App\Http\Controllers\ReturPenjualanController::class)->except(['create', 'edit']);
     
     // Pengeluaran Routes
@@ -86,5 +88,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('laporan/laba-rugi', [\App\Http\Controllers\LaporanLabaRugiController::class, 'index'])->name('laporan.laba-rugi');
     Route::get('laporan/stok', [\App\Http\Controllers\LaporanStokController::class, 'index'])->name('laporan.stok');
 });
+
 
 require __DIR__.'/settings.php';

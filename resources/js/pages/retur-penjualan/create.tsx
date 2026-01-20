@@ -27,9 +27,10 @@ import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/app-layout";
 import { Head, router } from "@inertiajs/react";
 import axios from "axios";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Search, Trash2, Plus } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDebounce } from "use-debounce";
 
 interface Transaksi {
     id: number;
@@ -54,6 +55,15 @@ interface ReturItem extends TransaksiItem {
     keterangan: string;
 }
 
+interface ReplacementItem {
+    id: number;
+    kode_barang: string;
+    nama_barang: string;
+    qty: number;
+    harga_jual: number;
+    stok: number;
+}
+
 interface Props {
     transaksis: Transaksi[];
 }
@@ -67,6 +77,14 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
     const [jenisRetur, setJenisRetur] = useState<"uang_kembali" | "ganti_barang">("uang_kembali");
     const [availableItems, setAvailableItems] = useState<TransaksiItem[]>([]);
     const [selectedItems, setSelectedItems] = useState<ReturItem[]>([]);
+    const [replacementItems, setReplacementItems] = useState<ReplacementItem[]>([]);
+
+    // Search state for replacement items
+    const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedQuery] = useDebounce(searchQuery, 300);
+    const [searchResults, setSearchResults] = useState<ReplacementItem[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -89,6 +107,68 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Search effect
+    useEffect(() => {
+        if (debouncedQuery.length >= 2) {
+            handleSearch(debouncedQuery);
+        } else {
+            setSearchResults([]);
+        }
+    }, [debouncedQuery]);
+
+    const handleSearch = async (query: string) => {
+        setIsSearching(true);
+        try {
+            const response = await axios.post("/retur-penjualan/search-barang", {
+                keyword: query,
+            });
+            setSearchResults(response.data.data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleAddReplacement = (item: ReplacementItem) => {
+        // Cek stok
+        if (item.stok <= 0) {
+            toast.error("Stok barang habis");
+            return;
+        }
+
+        const existingItem = replacementItems.find((i) => i.id === item.id);
+        if (existingItem) {
+            if (existingItem.qty + 1 > item.stok) {
+                toast.error("Stok tidak mencukupi");
+                return;
+            }
+            setReplacementItems(
+                replacementItems.map((i) =>
+                    i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+                )
+            );
+        } else {
+            setReplacementItems([...replacementItems, { ...item, qty: 1 }]);
+        }
+        setSearchQuery(""); // clear search
+        setSearchResults([]);
+    };
+
+    const handleUpdateReplacementQty = (index: number, qty: number, maxStok: number) => {
+        if (qty > maxStok) {
+            toast.error("Stok tidak mencukupi");
+            return;
+        }
+        const newItems = [...replacementItems];
+        newItems[index].qty = qty;
+        setReplacementItems(newItems);
+    };
+
+    const handleRemoveReplacement = (index: number) => {
+        setReplacementItems(replacementItems.filter((_, i) => i !== index));
     };
 
     const handleAddItem = (item: TransaksiItem) => {
@@ -137,6 +217,17 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
         );
     };
 
+    const calculateTotalReplacement = () => {
+        return replacementItems.reduce(
+            (sum, item) => sum + item.qty * item.harga_jual,
+            0
+        );
+    };
+
+    const calculateNetPayment = () => {
+        return calculateTotalReplacement() - calculateTotal();
+    };
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
@@ -163,6 +254,16 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
             }
         }
 
+        if (jenisRetur === 'ganti_barang' && replacementItems.length === 0) {
+            toast.error("Pilih barang pengganti");
+            return;
+        }
+
+        const netPayment = calculateNetPayment();
+        if (netPayment > 0 && !confirm(`Pelanggan harus membayar kekurangan Rp ${netPayment.toLocaleString('id-ID')}. Lanjutkan?`)) {
+            return;
+        }
+
         setIsSubmitting(true);
         router.post(
             "/retur-penjualan",
@@ -179,6 +280,8 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                     kondisi_barang: item.kondisi_barang,
                     keterangan: item.keterangan,
                 })),
+                items_pengganti: (jenisRetur === 'ganti_barang' ? replacementItems : []) as any,
+                net_payment: netPayment,
             },
             {
                 onSuccess: () => {
@@ -288,8 +391,8 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                                     </SelectContent>
                                 </Select>
                                 <p className="text-sm text-muted-foreground">
-                                    {jenisRetur === "uang_kembali" 
-                                        ? "Pelanggan akan menerima uang kembali" 
+                                    {jenisRetur === "uang_kembali"
+                                        ? "Pelanggan akan menerima uang kembali"
                                         : "Barang rusak akan diganti dengan barang baru"}
                                 </p>
                             </div>
@@ -478,6 +581,140 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                                         </div>
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {jenisRetur === "ganti_barang" && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Barang Pengganti</CardTitle>
+                                <CardDescription>
+                                    Cari dan pilih barang sebagai pengganti
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Search Section */}
+                                <div className="space-y-2">
+                                    <Label>Cari Barang</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="search"
+                                            placeholder="Ketik kode, nama, atau scan barcode..."
+                                            className="pl-8"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                        {searchResults.length > 0 && (
+                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                {searchResults.map((item) => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer"
+                                                        onClick={() => handleAddReplacement(item as any)}
+                                                    >
+                                                        <div>
+                                                            <div className="font-medium">
+                                                                {item.nama_barang}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {item.kode_barang} | Stok: {item.stok}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-sm font-medium">
+                                                            Rp {item.harga_jual.toLocaleString("id-ID")}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Replacement Items Table */}
+                                {replacementItems.length > 0 && (
+                                    <>
+                                        <div className="rounded-md border">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Nama Barang</TableHead>
+                                                        <TableHead>Qty</TableHead>
+                                                        <TableHead>Harga</TableHead>
+                                                        <TableHead>Subtotal</TableHead>
+                                                        <TableHead className="w-[50px]"></TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {replacementItems.map((item, index) => (
+                                                        <TableRow key={index}>
+                                                            <TableCell>
+                                                                <div className="font-medium">{item.nama_barang}</div>
+                                                                <div className="text-xs text-muted-foreground">{item.kode_barang}</div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Input
+                                                                    type="number"
+                                                                    min="1"
+                                                                    max={item.stok}
+                                                                    value={item.qty}
+                                                                    onChange={(e) =>
+                                                                        handleUpdateReplacementQty(
+                                                                            index,
+                                                                            parseInt(e.target.value) || 1,
+                                                                            item.stok
+                                                                        )
+                                                                    }
+                                                                    className="w-20"
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                Rp {item.harga_jual.toLocaleString("id-ID")}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                Rp {(item.qty * item.harga_jual).toLocaleString("id-ID")}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveReplacement(index)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 text-red-600" />
+                                                                </Button>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-4 border-t pt-4">
+                                            <div>
+                                                <div className="text-sm text-muted-foreground">Total Retur</div>
+                                                <div className="text-lg font-bold text-red-600">
+                                                    - Rp {calculateTotal().toLocaleString("id-ID")}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-sm text-muted-foreground">Total Barang Baru</div>
+                                                <div className="text-lg font-bold text-blue-600">
+                                                    + Rp {calculateTotalReplacement().toLocaleString("id-ID")}
+                                                </div>
+                                            </div>
+                                            <div className="bg-muted p-2 rounded">
+                                                <div className="text-sm text-muted-foreground">
+                                                    {calculateNetPayment() > 0 ? "Kurang Bayar" : "Kembalian"}
+                                                </div>
+                                                <div className={`text-xl font-bold ${calculateNetPayment() > 0 ? "text-red-600" : "text-green-600"}`}>
+                                                    Rp {Math.abs(calculateNetPayment()).toLocaleString("id-ID")}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </CardContent>
                         </Card>
                     )}
