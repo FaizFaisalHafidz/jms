@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link, router, usePage } from '@inertiajs/react';
-import { Home, LogOut, Package, ShoppingBag, ShoppingCart, TrendingUp } from 'lucide-react';
+import { Home, LogOut, Package, ShoppingBag, ShoppingCart, TrendingUp, User } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
 interface OwnerLayoutProps {
@@ -22,7 +22,7 @@ interface OwnerLayoutProps {
 export default function OwnerLayout({ children, title }: OwnerLayoutProps) {
     const { url } = usePage();
     const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-    
+
     const navItems = [
         {
             name: 'Beranda',
@@ -74,14 +74,26 @@ export default function OwnerLayout({ children, title }: OwnerLayoutProps) {
                         </h1>
                         <p className="text-xs text-gray-500">Jayamaksmur SPT</p>
                     </div>
-                    <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={handleLogoutClick}
-                        className="text-gray-600 hover:text-red-600"
-                    >
-                        <LogOut className="h-5 w-5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            className="text-gray-600 hover:text-blue-600"
+                        >
+                            <Link href="/owner/profile">
+                                <User className="h-5 w-5" />
+                            </Link>
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleLogoutClick}
+                            className="text-gray-600 hover:text-red-600"
+                        >
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                    </div>
                 </div>
             </div>
 

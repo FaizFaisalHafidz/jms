@@ -8,6 +8,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { formatRupiah } from '@/lib/utils';
 
 interface CabangTableProps {
     data: Array<{
@@ -55,22 +56,22 @@ export function CabangTable({ data }: CabangTableProps) {
                                         </TableCell>
                                         <TableCell>{item.kota}</TableCell>
                                         <TableCell className="text-right">
-                                            Rp {item.penjualan.toLocaleString('id-ID')}
+                                            {formatRupiah(item.penjualan)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            Rp {item.service.toLocaleString('id-ID')}
+                                            {formatRupiah(item.service)}
                                         </TableCell>
                                         <TableCell className="text-right text-red-600">
-                                            Rp {item.retur.toLocaleString('id-ID')}
+                                            {formatRupiah(item.retur)}
                                         </TableCell>
                                         <TableCell className="text-right font-semibold">
-                                            Rp {item.pendapatan.toLocaleString('id-ID')}
+                                            {formatRupiah(item.pendapatan)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            Rp {item.pembelian.toLocaleString('id-ID')}
+                                            {formatRupiah(item.pembelian)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            Rp {item.pengeluaran.toLocaleString('id-ID')}
+                                            {formatRupiah(item.pengeluaran)}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Badge
@@ -78,7 +79,7 @@ export function CabangTable({ data }: CabangTableProps) {
                                                     item.laba_bersih >= 0 ? 'default' : 'destructive'
                                                 }
                                             >
-                                                Rp {item.laba_bersih.toLocaleString('id-ID')}
+                                                {formatRupiah(item.laba_bersih)}
                                             </Badge>
                                         </TableCell>
                                     </TableRow>

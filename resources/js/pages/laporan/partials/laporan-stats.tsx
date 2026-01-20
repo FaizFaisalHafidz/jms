@@ -1,3 +1,4 @@
+import { formatRupiah } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     DollarSign,
@@ -22,10 +23,6 @@ interface LaporanStatsProps {
 }
 
 export function LaporanStats({ stats }: LaporanStatsProps) {
-    const formatCurrency = (value: number) => {
-        return `Rp ${value.toLocaleString('id-ID')}`;
-    };
-
     const cards = [
         {
             title: 'Total Penjualan',
@@ -91,7 +88,7 @@ export function LaporanStats({ stats }: LaporanStatsProps) {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(card.value)}</div>
+                            <div className="text-2xl font-bold">{formatRupiah(card.value)}</div>
                         </CardContent>
                     </Card>
                 );

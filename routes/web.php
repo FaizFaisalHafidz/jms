@@ -17,10 +17,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('redirect.owner')
         ->name('dashboard');
 
-    // Owner Dashboard
-    Route::get('owner/dashboard', [\App\Http\Controllers\OwnerDashboardController::class, 'index'])
-        ->middleware('redirect.not.owner')
-        ->name('owner.dashboard');
+    // Owner Routes
+    Route::middleware(['redirect.not.owner'])->prefix('owner')->name('owner.')->group(function () {
+        Route::get('dashboard', [\App\Http\Controllers\OwnerDashboardController::class, 'index'])->name('dashboard');
+        
+        // Profile
+        Route::get('profile', [\App\Http\Controllers\OwnerProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('profile/password', [\App\Http\Controllers\OwnerProfileController::class, 'updatePassword'])->name('profile.password.update');
+    });
 
     // Cabang Routes
     Route::resource('cabang', \App\Http\Controllers\CabangController::class)->except(['show', 'create', 'edit']);

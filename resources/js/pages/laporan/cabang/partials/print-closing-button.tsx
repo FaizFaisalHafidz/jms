@@ -41,6 +41,11 @@ interface ClosingData {
         total_biaya: number;
         pelanggan: string;
     }>;
+    expenses: Array<{
+        keterangan: string;
+        jumlah: number;
+        kategori_pengeluaran: string;
+    }>;
     per_metode: {
         tunai: number;
         transfer: number;
@@ -56,10 +61,18 @@ interface ClosingData {
         pendapatan_bersih: number;
         jumlah_transaksi: number;
         jumlah_service: number;
+        jumlah_pengeluaran: number;
+        cash_flow: {
+            masuk_penjualan_tunai: number;
+            masuk_service: number;
+            keluar_pengeluaran: number;
+            keluar_retur: number;
+            sisa_uang_cash: number;
+        };
     };
 }
 
-type PrintType = 'all' | 'penjualan' | 'service';
+type PrintType = 'all' | 'penjualan' | 'service' | 'expenses';
 
 export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
@@ -95,19 +108,28 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
             let title = 'LAPORAN CLOSING';
             let showPenjualan = true;
             let showService = true;
+            let showExpenses = true;
 
             if (printType === 'penjualan') {
                 title = 'CLOSING PENJUALAN';
                 showService = false;
+                showExpenses = false;
             } else if (printType === 'service') {
                 title = 'CLOSING SERVICE';
                 showPenjualan = false;
+                showExpenses = false;
+            } else if (printType === 'expenses') {
+                title = 'CLOSING PENGELUARAN';
+                showPenjualan = false;
+                showService = false;
             }
 
             // Calculate totals based on what's shown
             const totalPenjualan = showPenjualan ? data.summary.total_penjualan : 0;
             const totalService = showService ? data.summary.total_service : 0;
-            const totalBersih = totalPenjualan + totalService;
+            const totalPendapatan = totalPenjualan + totalService;
+            const totalPengeluaran = showExpenses ? data.summary.total_pengeluaran : 0;
+            const totalBersih = totalPendapatan - totalPengeluaran;
 
             const printContent = `
                 <!DOCTYPE html>
@@ -258,13 +280,75 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                         `}
                         <div class="line"></div>
                     ` : ''}
+
+                    ${showExpenses ? `
+                        <div class="section-title">PENGELUARAN (${data.summary.jumlah_pengeluaran})</div>
+                        ${data.expenses.length > 0 ? `
+                            ${data.expenses.map(exp => `
+                                <div class="item">
+                                    <div class="item-row">
+                                        <span>${exp.keterangan || exp.kategori_pengeluaran}</span>
+                                        <span>${formatRupiah(exp.jumlah)}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                            <div class="row" style="margin-top: 3px;">
+                                <span>Total Pengeluaran</span>
+                                <span>${formatRupiah(data.summary.total_pengeluaran)}</span>
+                            </div>
+                        ` : `
+                            <div style="font-size: 6px; text-align: center; margin: 2px 0;">Tidak ada pengeluaran</div>
+                        `}
+                        <div class="line"></div>
+                    ` : ''}
                     
                     <div class="double-line"></div>
                     
-                    <div class="total-row grand-total">
-                        <span>TOTAL</span>
+                    ${printType === 'all' ? `
+                    <div class="row total-row">
+                        <span>Total Pendapatan</span>
+                        <span>${formatRupiah(totalPendapatan)}</span>
+                    </div>
+                    <div class="row total-row" style="color: red;">
+                        <span>Total Pengeluaran</span>
+                        <span>- ${formatRupiah(totalPengeluaran)}</span>
+                    </div>
+                    <div class="row total-row grand-total">
+                        <span>LABA BERSIH (Harian)</span>
                         <span>${formatRupiah(totalBersih)}</span>
                     </div>
+
+                    <div class="line"></div>
+                    <div class="section-title center">SISA UANG CASH</div>
+                    
+                    <div class="row item-row">
+                        <span>Cash (Penjualan)</span>
+                        <span>${formatRupiah(data.summary.cash_flow.masuk_penjualan_tunai)}</span>
+                    </div>
+                    <div class="row item-row">
+                        <span>Cash (Service)</span>
+                        <span>${formatRupiah(data.summary.cash_flow.masuk_service)}</span>
+                    </div>
+                     <div class="row item-row">
+                        <span>Pengeluaran</span>
+                        <span>- ${formatRupiah(data.summary.cash_flow.keluar_pengeluaran)}</span>
+                    </div>
+                    ${data.summary.cash_flow.keluar_retur > 0 ? `
+                    <div class="row item-row">
+                        <span>Retur</span>
+                        <span>- ${formatRupiah(data.summary.cash_flow.keluar_retur)}</span>
+                    </div>
+                    ` : ''}
+                    <div class="row total-row grand-total" style="margin-top: 4px; border-top: 1px dashed black; padding-top: 2px;">
+                        <span>SISA CASH</span>
+                        <span>${formatRupiah(data.summary.cash_flow.sisa_uang_cash)}</span>
+                    </div>
+                    ` : `
+                    <div class="row total-row grand-total">
+                        <span>TOTAL</span>
+                        <span>${formatRupiah(totalBersih < 0 ? Math.abs(totalBersih) : totalBersih)}</span>
+                    </div>
+                    `}
                     
                     <div class="line"></div>
                     
@@ -321,6 +405,10 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                 <DropdownMenuItem onClick={() => handlePrint('service')}>
                     <Printer className="mr-2 h-4 w-4" />
                     Service Saja
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrint('expenses')}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Pengeluaran Saja
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

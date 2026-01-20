@@ -8,6 +8,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { formatRupiah } from '@/lib/utils';
 
 interface TopCabangTableProps {
     data: Array<{
@@ -44,8 +45,8 @@ export function TopCabangTable({ data }: TopCabangTableProps) {
                                                     index === 0
                                                         ? 'default'
                                                         : index === 1
-                                                          ? 'secondary'
-                                                          : 'outline'
+                                                            ? 'secondary'
+                                                            : 'outline'
                                                 }
                                             >
                                                 #{index + 1}
@@ -56,7 +57,7 @@ export function TopCabangTable({ data }: TopCabangTableProps) {
                                         </TableCell>
                                         <TableCell>{item.kota}</TableCell>
                                         <TableCell className="text-right font-semibold">
-                                            Rp {item.total_penjualan.toLocaleString('id-ID')}
+                                            {formatRupiah(item.total_penjualan)}
                                         </TableCell>
                                     </TableRow>
                                 ))}

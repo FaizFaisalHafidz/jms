@@ -227,15 +227,24 @@ class LaporanCabangController extends Controller
         $totalPenjualan = $transaksi->sum('total_harga');
         $totalService = $services->sum('total_biaya');
         
-        $totalPengeluaran = Pengeluaran::where('cabang_id', $cabangId)
+        $expenses = Pengeluaran::where('cabang_id', $cabangId)
             ->whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
-            ->sum('jumlah');
+            ->select('keterangan', 'jumlah', 'kategori_pengeluaran')
+            ->orderBy('tanggal_pengeluaran')
+            ->get();
+
+        $totalPengeluaran = $expenses->sum('jumlah');
 
         $totalRetur = ReturPenjualan::where('cabang_id', $cabangId)
             ->where('status_retur', 'disetujui')
             ->where('jenis_retur', 'uang_kembali')
             ->whereBetween('tanggal_retur', [$startDate, $endDate])
             ->sum('total_nilai_retur');
+
+        // Calculate Cash Flow (Estimasi)
+        // Asumsi: Service dibayar tunai (kecuali ada data lain). Transaksi via tunai.
+        $totalTunai = $perMetode['tunai'];
+        $sisaUangCash = ($totalTunai + $totalService) - $totalPengeluaran - $totalRetur;
 
         return response()->json([
             'cabang' => [
@@ -248,6 +257,7 @@ class LaporanCabangController extends Controller
             'tanggal_cetak' => now()->locale('id')->isoFormat('D MMMM YYYY, HH:mm'),
             'transaksi' => $transaksi,
             'services' => $services,
+            'expenses' => $expenses,
             'per_metode' => $perMetode,
             'summary' => [
                 'total_penjualan' => $totalPenjualan,
@@ -258,6 +268,14 @@ class LaporanCabangController extends Controller
                 'pendapatan_bersih' => $totalPenjualan + $totalService - $totalRetur - $totalPengeluaran,
                 'jumlah_transaksi' => $transaksi->count(),
                 'jumlah_service' => $services->count(),
+                'jumlah_pengeluaran' => $expenses->count(),
+                'cash_flow' => [
+                    'masuk_penjualan_tunai' => $totalTunai,
+                    'masuk_service' => $totalService,
+                    'keluar_pengeluaran' => $totalPengeluaran,
+                    'keluar_retur' => $totalRetur,
+                    'sisa_uang_cash' => $sisaUangCash
+                ]
             ],
         ]);
     }
