@@ -121,6 +121,8 @@ class LaporanCabangController extends Controller
                 ];
             });
 
+        $cabang = auth()->user()->cabang;
+        
         return Inertia::render('laporan/cabang/index', [
             'filters' => [
                 'filter_type' => $filterType,
@@ -143,6 +145,120 @@ class LaporanCabangController extends Controller
             ],
             'top_barang' => $topBarang,
             'transaksi_terbaru' => $transaksiTerbaru,
+            'cabang' => [
+                'nama' => $cabang->nama_cabang ?? '-',
+                'alamat' => $cabang->alamat ?? '-',
+                'telepon' => $cabang->telepon ?? '-',
+            ],
+        ]);
+    }
+
+    /**
+     * Get closing data for print (all transactions for the day)
+     */
+    public function closingData(Request $request)
+    {
+        $cabangId = auth()->user()->cabang_id;
+        $cabang = auth()->user()->cabang;
+        
+        // Filter type: 'harian' atau 'bulanan'
+        $filterType = $request->input('filter_type', 'harian');
+        
+        if ($filterType === 'harian') {
+            $tanggal = $request->input('tanggal', date('Y-m-d'));
+            $startDate = Carbon::parse($tanggal)->startOfDay();
+            $endDate = Carbon::parse($tanggal)->endOfDay();
+            $periodeLabel = Carbon::parse($tanggal)->locale('id')->isoFormat('dddd, D MMMM YYYY');
+        } else {
+            $tahun = $request->input('tahun', date('Y'));
+            $bulan = $request->input('bulan', date('m'));
+            $startDate = Carbon::createFromDate($tahun, $bulan, 1)->startOfMonth();
+            $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
+            $periodeLabel = Carbon::createFromDate($tahun, $bulan, 1)->locale('id')->isoFormat('MMMM YYYY');
+        }
+
+        // Get all transactions for the period (with metode_pembayaran)
+        $transaksiRaw = Transaksi::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->with('kasir:id,name')
+            ->orderBy('tanggal_transaksi', 'asc')
+            ->get();
+
+        $transaksi = $transaksiRaw->map(function ($item) {
+            return [
+                'nomor_transaksi' => $item->nomor_transaksi,
+                'tanggal_transaksi' => $item->tanggal_transaksi,
+                'total_harga' => $item->total_bayar,
+                'metode_pembayaran' => $item->metode_pembayaran,
+                'kasir' => $item->kasir->name ?? '-',
+            ];
+        });
+
+        // Calculate totals per payment method
+        $perMetode = [
+            'tunai' => $transaksiRaw->where('metode_pembayaran', 'tunai')->sum('total_bayar'),
+            'transfer' => $transaksiRaw->where('metode_pembayaran', 'transfer')->sum('total_bayar'),
+            'qris' => $transaksiRaw->where('metode_pembayaran', 'qris')->sum('total_bayar'),
+            'edc' => $transaksiRaw->where('metode_pembayaran', 'edc')->sum('total_bayar'),
+        ];
+
+        // Get all services for the period
+        $services = ServiceHp::where('cabang_id', $cabangId)
+            ->whereIn('status_service', ['selesai', 'diambil'])
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
+                      ->orWhere(function($q) use ($startDate, $endDate) {
+                          $q->whereNull('tanggal_selesai')
+                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
+                      });
+            })
+            ->orderBy('tanggal_masuk', 'asc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'nomor_service' => $item->nomor_service,
+                    'tanggal' => $item->tanggal_selesai ?? $item->tanggal_masuk,
+                    'total_biaya' => $item->total_biaya,
+                    'pelanggan' => $item->nama_pelanggan,
+                ];
+            });
+
+        // Total calculations
+        $totalPenjualan = $transaksi->sum('total_harga');
+        $totalService = $services->sum('total_biaya');
+        
+        $totalPengeluaran = Pengeluaran::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_pengeluaran', [$startDate, $endDate])
+            ->sum('jumlah');
+
+        $totalRetur = ReturPenjualan::where('cabang_id', $cabangId)
+            ->where('status_retur', 'disetujui')
+            ->where('jenis_retur', 'uang_kembali')
+            ->whereBetween('tanggal_retur', [$startDate, $endDate])
+            ->sum('total_nilai_retur');
+
+        return response()->json([
+            'cabang' => [
+                'nama' => $cabang->nama_cabang ?? '-',
+                'alamat' => $cabang->alamat ?? '-',
+                'telepon' => $cabang->telepon ?? '-',
+            ],
+            'periode' => $periodeLabel,
+            'filter_type' => $filterType,
+            'tanggal_cetak' => now()->locale('id')->isoFormat('D MMMM YYYY, HH:mm'),
+            'transaksi' => $transaksi,
+            'services' => $services,
+            'per_metode' => $perMetode,
+            'summary' => [
+                'total_penjualan' => $totalPenjualan,
+                'total_service' => $totalService,
+                'total_pengeluaran' => $totalPengeluaran,
+                'total_retur' => $totalRetur,
+                'pendapatan_kotor' => $totalPenjualan + $totalService,
+                'pendapatan_bersih' => $totalPenjualan + $totalService - $totalRetur - $totalPengeluaran,
+                'jumlah_transaksi' => $transaksi->count(),
+                'jumlah_service' => $services->count(),
+            ],
         ]);
     }
 }

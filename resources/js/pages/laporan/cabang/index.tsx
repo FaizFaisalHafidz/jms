@@ -4,6 +4,7 @@ import { LaporanFilters } from './partials/laporan-filters';
 import { LaporanStats } from './partials/laporan-stats';
 import { PengeluaranChart } from './partials/pengeluaran-chart';
 import { PenjualanChart } from './partials/penjualan-chart';
+import { PrintClosingButton } from './partials/print-closing-button';
 import { TopBarangTable } from './partials/top-barang-table';
 import { TransaksiTerbaruTable } from './partials/transaksi-terbaru-table';
 
@@ -44,6 +45,11 @@ interface LaporanCabangProps {
         total_harga: number;
         user: string;
     }>;
+    cabang: {
+        nama: string;
+        alamat: string;
+        telepon: string;
+    };
 }
 
 export default function LaporanCabangIndex({
@@ -52,6 +58,7 @@ export default function LaporanCabangIndex({
     charts,
     top_barang,
     transaksi_terbaru,
+    cabang,
 }: LaporanCabangProps) {
     return (
         <AppLayout>
@@ -62,9 +69,10 @@ export default function LaporanCabangIndex({
                     <div>
                         <h1 className="text-3xl font-bold">Laporan Cabang</h1>
                         <p className="text-muted-foreground">
-                            Laporan keuangan dan operasional cabang
+                            Laporan keuangan dan operasional cabang {cabang?.nama}
                         </p>
                     </div>
+                    <PrintClosingButton filters={filters} />
                 </div>
 
                 {/* Filters */}
@@ -88,3 +96,4 @@ export default function LaporanCabangIndex({
         </AppLayout>
     );
 }
+

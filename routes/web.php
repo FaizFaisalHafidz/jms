@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Laporan Routes
     Route::get('laporan', [\App\Http\Controllers\LaporanController::class, 'index'])->name('laporan.index');
     Route::get('laporan/cabang', [\App\Http\Controllers\LaporanCabangController::class, 'index'])->name('laporan.cabang');
+    Route::get('laporan/cabang/closing', [\App\Http\Controllers\LaporanCabangController::class, 'closingData'])->name('laporan.cabang.closing');
     Route::get('laporan/penjualan', [\App\Http\Controllers\LaporanPenjualanController::class, 'index'])->name('laporan.penjualan');
     Route::get('laporan/pembelian', [\App\Http\Controllers\LaporanPembelianController::class, 'index'])->name('laporan.pembelian');
     Route::get('laporan/laba-rugi', [\App\Http\Controllers\LaporanLabaRugiController::class, 'index'])->name('laporan.laba-rugi');
