@@ -246,7 +246,7 @@ class LaporanCabangController extends Controller
         // Calculate Cash Flow (Estimasi)
         // Hanya hitung service yang dibayar tunai
         $totalTunai = $perMetode['tunai'];
-        $sisaUangCash = ($totalTunai + $totalServiceTunai) - $totalPengeluaran - $totalRetur;
+        $sisaUangCash = $totalTunai - $totalPengeluaran - $totalRetur;
 
         return response()->json([
             'cabang' => [
