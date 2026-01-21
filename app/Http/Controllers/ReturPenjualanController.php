@@ -180,17 +180,33 @@ class ReturPenjualanController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $isManualMode = $request->boolean('is_manual_mode');
+
+        // Dynamic validation based on mode
+        $rules = [
             'tanggal_retur' => 'required|date',
-            'transaksi_id' => 'required|exists:transaksi,id',
             'alasan_retur' => 'required|string',
             'jenis_retur' => 'required|in:uang_kembali,ganti_barang',
             'items' => 'required|array|min:1',
-            'items.*.detail_transaksi_id' => 'required|exists:detail_transaksi,id',
-            'items.*.barang_id' => 'required|exists:barang,id',
-            'items.*.jumlah_retur' => 'required|integer|min:1',
-            'items.*.kondisi_barang' => 'required|in:baik,rusak',
-        ]);
+        ];
+
+        if ($isManualMode) {
+            // Manual mode: items don't need detail_transaksi_id
+            $rules['items.*.nama_barang'] = 'required|string';
+            $rules['items.*.jumlah_retur'] = 'required|integer|min:1';
+            $rules['items.*.harga_jual'] = 'required|numeric|min:0';
+            $rules['items.*.kondisi_barang'] = 'required|in:baik,rusak';
+            $rules['items.*.barang_id'] = 'nullable|exists:barang,id'; // Optional: if selected from database
+        } else {
+            // Normal mode: requires transaksi_id
+            $rules['transaksi_id'] = 'required|exists:transaksi,id';
+            $rules['items.*.detail_transaksi_id'] = 'required|exists:detail_transaksi,id';
+            $rules['items.*.barang_id'] = 'required|exists:barang,id';
+            $rules['items.*.jumlah_retur'] = 'required|integer|min:1';
+            $rules['items.*.kondisi_barang'] = 'required|in:baik,rusak';
+        }
+
+        $request->validate($rules);
 
         DB::beginTransaction();
         try {
@@ -207,7 +223,7 @@ class ReturPenjualanController extends Controller
             $retur = ReturPenjualan::create([
                 'nomor_retur' => $nomorRetur,
                 'tanggal_retur' => $request->tanggal_retur,
-                'transaksi_id' => $request->transaksi_id,
+                'transaksi_id' => $isManualMode ? null : $request->transaksi_id,
                 'cabang_id' => Auth::user()->cabang_id,
                 'total_item' => count($request->items),
                 'total_nilai_retur' => $totalNilaiRetur,
@@ -223,20 +239,16 @@ class ReturPenjualanController extends Controller
                 
                 DetailReturPenjualan::create([
                     'retur_penjualan_id' => $retur->id,
-                    'detail_transaksi_id' => $item['detail_transaksi_id'],
-                    'barang_id' => $item['barang_id'],
+                    'detail_transaksi_id' => $isManualMode ? null : $item['detail_transaksi_id'],
+                    'barang_id' => $item['barang_id'] ?? null,
                     'jumlah_retur' => $item['jumlah_retur'],
                     'harga_jual' => $item['harga_jual'],
                     'subtotal' => $subtotal,
                     'kondisi_barang' => $item['kondisi_barang'],
-                    'keterangan' => $item['keterangan'] ?? null,
+                    'keterangan' => ($isManualMode ? 'Retur Manual: ' : '') . ($item['keterangan'] ?? '') . ($isManualMode ? ' - ' . $item['nama_barang'] : ''),
                 ]);
             }
 
-            DB::commit();
-
-            return redirect()->route('retur-penjualan.index')
-                ->with('success', 'Retur penjualan berhasil dibuat');
             // If there are replacement items (Ganti Barang)
             if ($request->jenis_retur === 'ganti_barang' && !empty($request->items_pengganti)) {
                 $subtotalBaru = 0;
@@ -256,20 +268,17 @@ class ReturPenjualanController extends Controller
                     'nomor_transaksi' => $this->generateNomorTransaksi(),
                     'tanggal_transaksi' => now(),
                     'cabang_id' => $cabangId,
-                    'jenis_transaksi' => 'retail', // Default to retail for exchange
-                    'nama_pelanggan' => 'Tukar Barang - Retur #' . $nomorRetur,
+                    'jenis_transaksi' => 'retail',
+                    'nama_pelanggan' => 'Tukar Barang - Retur #' . $nomorRetur . ($isManualMode ? ' (Manual)' : ''),
                     'subtotal' => $subtotalBaru,
                     'diskon' => 0,
                     'biaya_service' => 0,
                     'total_bayar' => $subtotalBaru,
                     'metode_pembayaran' => $request->metode_pembayaran ?? 'tunai',
-                    'metode_pembayaran' => $request->metode_pembayaran ?? 'tunai',
-                    // If replacement is cheaper (or equal), paid amount is the return value (customer gets change).
-                    // If replacement is more expensive, paid amount is return value + extra payment (which equals subtotal).
-                    'jumlah_bayar' => ($totalNilaiRetur >= $subtotalBaru) ? $totalNilaiRetur : $subtotalBaru, 
+                    'jumlah_bayar' => ($totalNilaiRetur >= $subtotalBaru) ? $totalNilaiRetur : $subtotalBaru,
                     'kembalian' => ($totalNilaiRetur >= $subtotalBaru) ? ($totalNilaiRetur - $subtotalBaru) : 0,
                     'total_laba' => $totalLaba,
-                    'keterangan' => 'Transaksi tukar barang dari Retur ' . $nomorRetur,
+                    'keterangan' => 'Transaksi tukar barang dari Retur ' . $nomorRetur . ($isManualMode ? ' (Retur Manual)' : ''),
                     'status_transaksi' => 'selesai',
                     'kasir_id' => Auth::id(),
                 ]);
@@ -300,16 +309,16 @@ class ReturPenjualanController extends Controller
                         $stokCabang->decrement('jumlah_stok', $item['qty']);
                     }
                 }
-            }
 
-            DB::commit();
+                DB::commit();
 
-            if (isset($transaksiBaru)) {
                 $transaksiBaru->load(['detailTransaksi', 'kasir', 'cabang']);
                 return redirect()->route('retur-penjualan.index')
                     ->with('success', 'Retur penjualan berhasil dibuat dan transaksi pengganti tercatat.')
                     ->with('transaksi_baru', $transaksiBaru);
             }
+
+            DB::commit();
 
             return redirect()->route('retur-penjualan.index')
                 ->with('success', 'Retur penjualan berhasil dibuat');

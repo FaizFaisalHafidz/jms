@@ -31,6 +31,7 @@ import { ArrowLeft, Search, Trash2, Plus } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
+import { Switch } from "@/components/ui/switch";
 
 interface Transaksi {
     id: number;
@@ -55,6 +56,15 @@ interface ReturItem extends TransaksiItem {
     keterangan: string;
 }
 
+interface ManualReturItem {
+    nama_barang: string;
+    jumlah_retur: number;
+    harga_jual: number;
+    kondisi_barang: "baik" | "rusak";
+    keterangan: string;
+    barang_id?: number; // Optional: if selected from database
+}
+
 interface ReplacementItem {
     id: number;
     kode_barang: string;
@@ -69,6 +79,9 @@ interface Props {
 }
 
 export default function ReturPenjualanCreate({ transaksis }: Props) {
+    // Mode toggle
+    const [isManualMode, setIsManualMode] = useState(false);
+
     const [tanggalRetur, setTanggalRetur] = useState(
         new Date().toISOString().split("T")[0]
     );
@@ -79,6 +92,14 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
     const [selectedItems, setSelectedItems] = useState<ReturItem[]>([]);
     const [replacementItems, setReplacementItems] = useState<ReplacementItem[]>([]);
 
+    // Manual mode items
+    const [manualItems, setManualItems] = useState<ManualReturItem[]>([]);
+
+    // Search state for manual items (separate from replacement search)
+    const [manualSearchQuery, setManualSearchQuery] = useState("");
+    const [debouncedManualQuery] = useDebounce(manualSearchQuery, 300);
+    const [manualSearchResults, setManualSearchResults] = useState<ReplacementItem[]>([]);
+
     // Search state for replacement items
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedQuery] = useDebounce(searchQuery, 300);
@@ -88,14 +109,24 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Reset when toggling mode
     useEffect(() => {
-        if (transaksiId) {
+        setTransaksiId("");
+        setSelectedItems([]);
+        setManualItems([]);
+        setAvailableItems([]);
+        setManualSearchQuery("");
+        setManualSearchResults([]);
+    }, [isManualMode]);
+
+    useEffect(() => {
+        if (transaksiId && !isManualMode) {
             loadTransaksiDetail(parseInt(transaksiId));
         } else {
             setAvailableItems([]);
             setSelectedItems([]);
         }
-    }, [transaksiId]);
+    }, [transaksiId, isManualMode]);
 
     const loadTransaksiDetail = async (id: number) => {
         setIsLoading(true);
@@ -109,7 +140,27 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
         }
     };
 
-    // Search effect
+    // Search effect for manual items
+    useEffect(() => {
+        if (debouncedManualQuery.length >= 2) {
+            handleManualSearch(debouncedManualQuery);
+        } else {
+            setManualSearchResults([]);
+        }
+    }, [debouncedManualQuery]);
+
+    const handleManualSearch = async (query: string) => {
+        try {
+            const response = await axios.post("/retur-penjualan/search-barang", {
+                keyword: query,
+            });
+            setManualSearchResults(response.data.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // Search effect for replacement items
     useEffect(() => {
         if (debouncedQuery.length >= 2) {
             handleSearch(debouncedQuery);
@@ -210,7 +261,34 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
         setSelectedItems(selectedItems.filter((_, i) => i !== index));
     };
 
+    // Manual item handlers
+    const handleAddManualItem = () => {
+        setManualItems([...manualItems, {
+            nama_barang: "",
+            jumlah_retur: 1,
+            harga_jual: 0,
+            kondisi_barang: "baik",
+            keterangan: "",
+        }]);
+    };
+
+    const handleUpdateManualItem = (index: number, field: keyof ManualReturItem, value: any) => {
+        const newItems = [...manualItems];
+        newItems[index] = { ...newItems[index], [field]: value };
+        setManualItems(newItems);
+    };
+
+    const handleRemoveManualItem = (index: number) => {
+        setManualItems(manualItems.filter((_, i) => i !== index));
+    };
+
     const calculateTotal = () => {
+        if (isManualMode) {
+            return manualItems.reduce(
+                (sum, item) => sum + item.jumlah_retur * item.harga_jual,
+                0
+            );
+        }
         return selectedItems.reduce(
             (sum, item) => sum + item.jumlah_retur * item.harga_jual,
             0
@@ -231,12 +309,13 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
 
-        if (!transaksiId) {
+        if (!isManualMode && !transaksiId) {
             toast.error("Pilih transaksi");
             return;
         }
 
-        if (selectedItems.length === 0) {
+        const items = isManualMode ? manualItems : selectedItems;
+        if (items.length === 0) {
             toast.error("Tambahkan minimal 1 barang");
             return;
         }
@@ -246,11 +325,25 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
             return;
         }
 
-        // Validate jumlah retur
-        for (const item of selectedItems) {
-            if (item.jumlah_retur > item.jumlah_beli) {
-                toast.error(`Jumlah retur ${item.nama_barang} melebihi jumlah beli`);
-                return;
+        // Validate for manual mode
+        if (isManualMode) {
+            for (const item of manualItems) {
+                if (!item.nama_barang) {
+                    toast.error("Lengkapi nama barang");
+                    return;
+                }
+                if (item.harga_jual <= 0) {
+                    toast.error("Harga harus lebih dari 0");
+                    return;
+                }
+            }
+        } else {
+            // Validate jumlah retur for normal mode
+            for (const item of selectedItems) {
+                if (item.jumlah_retur > item.jumlah_beli) {
+                    toast.error(`Jumlah retur ${item.nama_barang} melebihi jumlah beli`);
+                    return;
+                }
             }
         }
 
@@ -265,24 +358,39 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
         }
 
         setIsSubmitting(true);
+
+        const submitData: any = {
+            tanggal_retur: tanggalRetur,
+            alasan_retur: alasanRetur,
+            jenis_retur: jenisRetur,
+            is_manual_mode: isManualMode,
+            items_pengganti: (jenisRetur === 'ganti_barang' ? replacementItems : []),
+            net_payment: netPayment,
+        };
+
+        if (isManualMode) {
+            submitData.items = manualItems.map((item) => ({
+                nama_barang: item.nama_barang,
+                jumlah_retur: item.jumlah_retur,
+                harga_jual: item.harga_jual,
+                kondisi_barang: item.kondisi_barang,
+                keterangan: item.keterangan,
+            }));
+        } else {
+            submitData.transaksi_id = transaksiId;
+            submitData.items = selectedItems.map((item) => ({
+                detail_transaksi_id: item.detail_transaksi_id,
+                barang_id: item.barang_id,
+                jumlah_retur: item.jumlah_retur,
+                harga_jual: item.harga_jual,
+                kondisi_barang: item.kondisi_barang,
+                keterangan: item.keterangan,
+            }));
+        }
+
         router.post(
             "/retur-penjualan",
-            {
-                tanggal_retur: tanggalRetur,
-                transaksi_id: transaksiId,
-                alasan_retur: alasanRetur,
-                jenis_retur: jenisRetur,
-                items: selectedItems.map((item) => ({
-                    detail_transaksi_id: item.detail_transaksi_id,
-                    barang_id: item.barang_id,
-                    jumlah_retur: item.jumlah_retur,
-                    harga_jual: item.harga_jual,
-                    kondisi_barang: item.kondisi_barang,
-                    keterangan: item.keterangan,
-                })),
-                items_pengganti: (jenisRetur === 'ganti_barang' ? replacementItems : []) as any,
-                net_payment: netPayment,
-            },
+            submitData,
             {
                 onSuccess: () => {
                     toast.success("Retur penjualan berhasil dibuat");
@@ -327,10 +435,28 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                         <CardHeader>
                             <CardTitle>Informasi Retur</CardTitle>
                             <CardDescription>
-                                Pilih transaksi dan isi informasi retur
+                                {isManualMode
+                                    ? "Input manual untuk retur dari transaksi lama (sebelum sistem)"
+                                    : "Pilih transaksi dan isi informasi retur"}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {/* Toggle Manual Mode */}
+                            <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base font-medium">
+                                        Retur Manual (Legacy)
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Untuk retur dari transaksi sebelum sistem dibuat
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={isManualMode}
+                                    onCheckedChange={setIsManualMode}
+                                />
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>Tanggal Retur</Label>
@@ -342,30 +468,32 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label>Transaksi</Label>
-                                    <Select
-                                        value={transaksiId}
-                                        onValueChange={setTransaksiId}
-                                        required
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih transaksi" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {transaksis.map((transaksi) => (
-                                                <SelectItem
-                                                    key={transaksi.id}
-                                                    value={transaksi.id.toString()}
-                                                >
-                                                    {transaksi.nomor_transaksi} -{" "}
-                                                    {transaksi.tanggal_transaksi} (Rp{" "}
-                                                    {transaksi.total_bayar.toLocaleString("id-ID")})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {!isManualMode && (
+                                    <div className="space-y-2">
+                                        <Label>Transaksi</Label>
+                                        <Select
+                                            value={transaksiId}
+                                            onValueChange={setTransaksiId}
+                                            required={!isManualMode}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Pilih transaksi" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {transaksis.map((transaksi) => (
+                                                    <SelectItem
+                                                        key={transaksi.id}
+                                                        value={transaksi.id.toString()}
+                                                    >
+                                                        {transaksi.nomor_transaksi} -{" "}
+                                                        {transaksi.tanggal_transaksi} (Rp{" "}
+                                                        {transaksi.total_bayar.toLocaleString("id-ID")})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -399,7 +527,212 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                         </CardContent>
                     </Card>
 
-                    {transaksiId && (
+                    {/* Manual Item Input */}
+                    {isManualMode && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Input Barang Retur (Manual)</CardTitle>
+                                <CardDescription>
+                                    Cari dan pilih barang dari database, atau input manual jika barang tidak ada di sistem
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Search untuk tambah barang */}
+                                <div className="space-y-2">
+                                    <Label>Cari Barang (Opsional)</Label>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            type="search"
+                                            placeholder="Ketik nama/kode barang untuk auto-fill, atau klik 'Tambah Manual' untuk input bebas..."
+                                            className="pl-8"
+                                            value={manualSearchQuery}
+                                            onChange={(e) => setManualSearchQuery(e.target.value)}
+                                        />
+                                        {manualSearchResults.length > 0 && (
+                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                                {manualSearchResults.map((item) => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="flex items-center justify-between p-3 hover:bg-muted cursor-pointer border-b last:border-0"
+                                                        onClick={() => {
+                                                            // Add as manual item with pre-filled data
+                                                            setManualItems([...manualItems, {
+                                                                nama_barang: item.nama_barang,
+                                                                jumlah_retur: 1,
+                                                                harga_jual: item.harga_jual,
+                                                                kondisi_barang: "baik",
+                                                                keterangan: "",
+                                                                barang_id: item.id, // Track barang_id for stock
+                                                            } as any]);
+                                                            setManualSearchQuery("");
+                                                            setManualSearchResults([]);
+                                                            toast.success(`${item.nama_barang} ditambahkan`);
+                                                        }}
+                                                    >
+                                                        <div>
+                                                            <div className="font-medium text-sm">
+                                                                {item.nama_barang}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {item.kode_barang} | Stok: {item.stok}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-sm font-semibold text-blue-600">
+                                                            Rp {item.harga_jual.toLocaleString("id-ID")}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        💡 Pilih dari hasil pencarian untuk auto-fill nama & harga
+                                    </p>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    onClick={handleAddManualItem}
+                                    variant="outline"
+                                    className="w-full"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Tambah Manual (Input Bebas)
+                                </Button>
+
+                                {manualItems.length > 0 && (
+                                    <div className="space-y-3">
+                                        {manualItems.map((item, index) => (
+                                            <Card key={index} className="p-4 bg-slate-50">
+                                                <div className="grid grid-cols-6 gap-3">
+                                                    <div className="col-span-2 space-y-2">
+                                                        <Label className="text-xs">
+                                                            Nama Barang
+                                                            {(item as any).barang_id && (
+                                                                <span className="ml-1 text-blue-600">✓</span>
+                                                            )}
+                                                        </Label>
+                                                        <Input
+                                                            value={item.nama_barang}
+                                                            onChange={(e) =>
+                                                                handleUpdateManualItem(
+                                                                    index,
+                                                                    "nama_barang",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            placeholder="Nama barang..."
+                                                            required
+                                                        />
+                                                        {(item as any).barang_id && (
+                                                            <p className="text-xs text-blue-600">Dari database</p>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs">Jumlah</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            value={item.jumlah_retur}
+                                                            onChange={(e) =>
+                                                                handleUpdateManualItem(
+                                                                    index,
+                                                                    "jumlah_retur",
+                                                                    parseInt(e.target.value) || 1
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs">Harga</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            value={item.harga_jual}
+                                                            onChange={(e) =>
+                                                                handleUpdateManualItem(
+                                                                    index,
+                                                                    "harga_jual",
+                                                                    parseInt(e.target.value) || 0
+                                                                )
+                                                            }
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-xs">Kondisi</Label>
+                                                        <Select
+                                                            value={item.kondisi_barang}
+                                                            onValueChange={(value: "baik" | "rusak") =>
+                                                                handleUpdateManualItem(
+                                                                    index,
+                                                                    "kondisi_barang",
+                                                                    value
+                                                                )
+                                                            }
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="baik">Baik</SelectItem>
+                                                                <SelectItem value="rusak">Rusak</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="flex items-end">
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleRemoveManualItem(index)}
+                                                            className="text-red-600 hover:text-red-700"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 space-y-2">
+                                                    <Label className="text-xs">Keterangan (Opsional)</Label>
+                                                    <Input
+                                                        value={item.keterangan}
+                                                        onChange={(e) =>
+                                                            handleUpdateManualItem(
+                                                                index,
+                                                                "keterangan",
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="Catatan tambahan..."
+                                                    />
+                                                </div>
+                                                <div className="mt-2 text-right">
+                                                    <span className="text-sm font-medium">
+                                                        Subtotal: Rp{" "}
+                                                        {(item.jumlah_retur * item.harga_jual).toLocaleString("id-ID")}
+                                                    </span>
+                                                </div>
+                                            </Card>
+                                        ))}
+
+                                        <div className="flex justify-end">
+                                            <div className="bg-muted px-6 py-4 rounded-lg">
+                                                <div className="text-sm text-muted-foreground">
+                                                    Total Nilai Retur
+                                                </div>
+                                                <div className="text-2xl font-bold">
+                                                    Rp {calculateTotal().toLocaleString("id-ID")}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {transaksiId && !isManualMode && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Pilih Barang</CardTitle>
