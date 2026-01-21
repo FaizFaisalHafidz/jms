@@ -118,7 +118,7 @@ class PosController extends Controller
             'detail.*.barang_id' => 'required|exists:barang,id',
             'detail.*.jumlah' => 'required|integer|min:1',
             'detail.*.harga_jual' => 'required|integer|min:0',
-            'detail.*.jenis_harga' => 'required|in:konsumen,konter',
+            'detail.*.jenis_harga' => 'required|in:konsumen,konter,partai',
         ]);
 
         if ($validator->fails()) {

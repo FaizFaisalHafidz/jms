@@ -26,3 +26,9 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+venv
+*.py
+*.pdf
+*.txt
+*.md
+*.sh
