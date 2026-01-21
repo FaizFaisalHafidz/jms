@@ -64,15 +64,30 @@ export default function LaporanCabangIndex({
         <AppLayout>
             <Head title="Laporan Cabang" />
 
-            <div className="space-y-6 p-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold">Laporan Cabang</h1>
-                        <p className="text-muted-foreground">
-                            Laporan keuangan dan operasional cabang {cabang?.nama}
-                        </p>
+            <div className="space-y-6 p-6 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 min-h-screen">
+                {/* Modern Header */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 p-8 shadow-lg">
+                    <div className="relative z-10 flex items-start justify-between">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="h-1.5 w-1.5 rounded-full bg-white/80 animate-pulse" />
+                                <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">
+                                    Financial Report
+                                </span>
+                            </div>
+                            <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                                Laporan Cabang
+                            </h1>
+                            <p className="text-blue-50 text-base max-w-2xl leading-relaxed">
+                                Laporan keuangan dan operasional <span className="font-semibold">{cabang?.nama}</span>
+                            </p>
+                        </div>
+                        <PrintClosingButton filters={filters} />
                     </div>
-                    <PrintClosingButton filters={filters} />
+
+                    {/* Subtle decorative elements */}
+                    <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
+                    <div className="absolute -left-4 -bottom-4 h-32 w-32 rounded-full bg-indigo-400/10 blur-2xl" />
                 </div>
 
                 {/* Filters */}

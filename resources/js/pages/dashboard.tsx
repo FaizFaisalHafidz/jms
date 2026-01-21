@@ -5,6 +5,8 @@ import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { AlertTriangle, DollarSign, Package, ShoppingCart, Store, TrendingUp, Users, Wrench } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { cn } from '@/lib/utils';
+import React from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -20,40 +22,84 @@ interface StatsCardProps {
     description?: string;
 }
 
-function StatsCard({ title, value, icon, description }: StatsCardProps) {
-	const isCurrency =
-		title.toLowerCase().includes('penjualan') ||
-		title.toLowerCase().includes('pembelian') ||
-		title.toLowerCase().includes('laba') ||
-		title.toLowerCase().includes('pengeluaran');
 
-	// Ensure value is a number
-	const numValue = typeof value === 'string' ? parseFloat(value) : value;
-	
-	let formattedValue: string;
-	
-	if (typeof numValue === 'number' && !isNaN(numValue)) {
-		if (isCurrency) {
-			formattedValue = `Rp ${numValue.toLocaleString('id-ID')}`;
-		} else {
-			formattedValue = numValue.toLocaleString('id-ID');
-		}
-	} else {
-		formattedValue = String(value);
-	}
+function StatsCard({ title, value, icon, description, className, trend }: StatsCardProps & { className?: string, trend?: 'up' | 'down' | 'neutral' }) {
+    const isCurrency =
+        title.toLowerCase().includes('penjualan') ||
+        title.toLowerCase().includes('pembelian') ||
+        title.toLowerCase().includes('laba') ||
+        title.toLowerCase().includes('pengeluaran') ||
+        title.toLowerCase().includes('total bayar');
 
-	return (
-		<Card>
-			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-				<CardTitle className="text-sm font-medium">{title}</CardTitle>
-				{icon}
-			</CardHeader>
-			<CardContent>
-				<div className="text-2xl font-bold">{formattedValue}</div>
-				{description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
-			</CardContent>
-		</Card>
-	);
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+    let formattedValue: string;
+
+    if (typeof numValue === 'number' && !isNaN(numValue)) {
+        if (isCurrency) {
+            formattedValue = `Rp ${numValue.toLocaleString('id-ID')}`;
+        } else {
+            formattedValue = numValue.toLocaleString('id-ID');
+        }
+    } else {
+        formattedValue = String(value);
+    }
+
+    // Determine icon color based on card type
+    const getIconColor = () => {
+        if (title.toLowerCase().includes('laba')) return 'text-emerald-600';
+        if (title.toLowerCase().includes('pengeluaran') || title.toLowerCase().includes('stok rendah')) return 'text-rose-600';
+        if (title.toLowerCase().includes('penjualan')) return 'text-blue-600';
+        if (title.toLowerCase().includes('pembelian')) return 'text-violet-600';
+        if (title.toLowerCase().includes('stok')) return 'text-amber-600';
+        if (title.toLowerCase().includes('transaksi') || title.toLowerCase().includes('service')) return 'text-cyan-600';
+        return 'text-slate-600';
+    };
+
+    const getIconBg = () => {
+        if (title.toLowerCase().includes('laba')) return 'bg-emerald-50 dark:bg-emerald-950/50';
+        if (title.toLowerCase().includes('pengeluaran') || title.toLowerCase().includes('stok rendah')) return 'bg-rose-50 dark:bg-rose-950/50';
+        if (title.toLowerCase().includes('penjualan')) return 'bg-blue-50 dark:bg-blue-950/50';
+        if (title.toLowerCase().includes('pembelian')) return 'bg-violet-50 dark:bg-violet-950/50';
+        if (title.toLowerCase().includes('stok')) return 'bg-amber-50 dark:bg-amber-950/50';
+        if (title.toLowerCase().includes('transaksi') || title.toLowerCase().includes('service')) return 'bg-cyan-50 dark:bg-cyan-950/50';
+        return 'bg-slate-50 dark:bg-slate-950/50';
+    };
+
+    return (
+        <Card className={cn(
+            "group relative overflow-hidden border-0 bg-white dark:bg-slate-900/50 shadow-sm hover:shadow-md transition-all duration-200",
+            className
+        )}>
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+                <div className="space-y-1 flex-1">
+                    <CardTitle className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        {title}
+                    </CardTitle>
+                </div>
+                <div className={cn(
+                    "p-2.5 rounded-xl transition-transform group-hover:scale-110",
+                    getIconBg(),
+                    getIconColor()
+                )}>
+                    {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, {
+                        className: "h-5 w-5",
+                        strokeWidth: 2
+                    }) : icon}
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-1">
+                <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {formattedValue}
+                </div>
+                {description && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {description}
+                    </p>
+                )}
+            </CardContent>
+        </Card>
+    );
 }
 
 interface Props {
@@ -66,12 +112,12 @@ interface Props {
     transaksi_terbaru?: Array<{ kode_transaksi: string; tanggal_transaksi: string; total_bayar: number; metode_pembayaran: string; kasir: string }>;
 }
 
-export default function Dashboard({ 
-    role, 
-    stats = {}, 
-    grafik_penjualan = [], 
+export default function Dashboard({
+    role,
+    stats = {},
+    grafik_penjualan = [],
     grafik_keuangan = [],
-    top_cabang = [], 
+    top_cabang = [],
     top_barang = [],
     transaksi_terbaru = []
 }: Props) {
@@ -79,48 +125,65 @@ export default function Dashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex flex-col gap-6 p-6">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground">
-                        {role === 'super_admin' && 'Overview sistem keseluruhan'}
-                        {role === 'owner' && 'Monitoring bisnis dan keuangan'}
-                        {role === 'admin_cabang' && 'Monitoring operasional cabang'}
-                    </p>
+                {/* Welcome Banner */}
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 p-8 shadow-lg">
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="h-1.5 w-1.5 rounded-full bg-white/80 animate-pulse" />
+                            <span className="text-xs font-medium text-blue-100 uppercase tracking-wider">
+                                {role === 'super_admin' && 'System Administrator'}
+                                {role === 'owner' && 'Business Owner'}
+                                {role === 'admin_cabang' && 'Branch Manager'}
+                            </span>
+                        </div>
+                        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                            Selamat Datang Kembali!
+                        </h1>
+                        <p className="text-blue-50 text-base max-w-2xl leading-relaxed">
+                            {role === 'super_admin' && 'Kelola seluruh aspek sistem dan monitor performa bisnis secara menyeluruh.'}
+                            {role === 'owner' && 'Pantau performa bisnis dan keuangan Anda secara real-time dengan insight yang actionable.'}
+                            {role === 'admin_cabang' && 'Kelola operasional harian cabang dengan efisien dan monitor performa tim Anda.'}
+                        </p>
+                    </div>
+
+                    {/* Subtle decorative elements */}
+                    <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5 blur-3xl" />
+                    <div className="absolute -left-4 -bottom-4 h-32 w-32 rounded-full bg-indigo-400/10 blur-2xl" />
                 </div>
 
                 {/* Stats Cards */}
                 {role === 'super_admin' && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <StatsCard title="Total Cabang" value={stats.total_cabang} icon={<Store className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Total User" value={stats.total_user} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Total Barang" value={stats.total_barang} icon={<Package className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Total Stok" value={stats.total_stok} icon={<Package className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Penjualan Hari Ini" value={stats.penjualan_hari_ini} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Penjualan Bulan Ini" value={stats.penjualan_bulan_ini} icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} />
+                    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                        <StatsCard title="Total Cabang" value={stats.total_cabang} icon={<Store />} />
+                        <StatsCard title="Total User" value={stats.total_user} icon={<Users />} />
+                        <StatsCard title="Total Barang" value={stats.total_barang} icon={<Package />} />
+                        <StatsCard title="Total Stok" value={stats.total_stok} icon={<Package />} />
+                        <StatsCard title="Penjualan Hari Ini" value={stats.penjualan_hari_ini} icon={<DollarSign />} />
+                        <StatsCard title="Penjualan Bulan Ini" value={stats.penjualan_bulan_ini} icon={<TrendingUp />} />
                     </div>
                 )}
 
                 {role === 'owner' && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <StatsCard title="Penjualan Hari Ini" value={stats.penjualan_hari_ini} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Penjualan Bulan Ini" value={stats.penjualan_bulan_ini} icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Laba Kotor Bulan Ini" value={stats.laba_kotor_bulan_ini} icon={<DollarSign className="h-4 w-4 text-blue-600" />} description="Dari penjualan" />
-                        <StatsCard title="Laba Bersih Bulan Ini" value={stats.laba_bersih_bulan_ini} icon={<DollarSign className="h-4 w-4 text-green-600" />} description="Setelah biaya" />
-                        <StatsCard title="Pembelian Bulan Ini" value={stats.pembelian_bulan_ini} icon={<ShoppingCart className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Pengeluaran Bulan Ini" value={stats.pengeluaran_bulan_ini} icon={<ShoppingCart className="h-4 w-4 text-red-600" />} />
-                        <StatsCard title="Total Stok" value={stats.total_stok} icon={<Package className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Stok Rendah" value={stats.stok_rendah} icon={<AlertTriangle className="h-4 w-4 text-yellow-600" />} />
+                    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                        <StatsCard title="Penjualan Hari Ini" value={stats.penjualan_hari_ini} icon={<DollarSign />} />
+                        <StatsCard title="Penjualan Bulan Ini" value={stats.penjualan_bulan_ini} icon={<TrendingUp />} />
+                        <StatsCard title="Laba Kotor Bulan Ini" value={stats.laba_kotor_bulan_ini} icon={<DollarSign />} description="Dari penjualan" />
+                        <StatsCard title="Laba Bersih Bulan Ini" value={stats.laba_bersih_bulan_ini} icon={<DollarSign />} description="Setelah biaya" />
+                        <StatsCard title="Pembelian Bulan Ini" value={stats.pembelian_bulan_ini} icon={<ShoppingCart />} />
+                        <StatsCard title="Pengeluaran Bulan Ini" value={stats.pengeluaran_bulan_ini} icon={<ShoppingCart />} />
+                        <StatsCard title="Total Stok" value={stats.total_stok} icon={<Package />} />
+                        <StatsCard title="Stok Rendah" value={stats.stok_rendah} icon={<AlertTriangle />} />
                     </div>
                 )}
 
                 {role === 'admin_cabang' && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <StatsCard title="Penjualan Hari Ini" value={stats.penjualan_hari_ini} icon={<DollarSign className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Penjualan Bulan Ini" value={stats.penjualan_bulan_ini} icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Transaksi Hari Ini" value={stats.transaksi_hari_ini} icon={<ShoppingCart className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Service Aktif" value={stats.service_aktif} icon={<Wrench className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Stok Cabang" value={stats.stok_cabang} icon={<Package className="h-4 w-4 text-muted-foreground" />} />
-                        <StatsCard title="Stok Rendah" value={stats.stok_rendah} icon={<AlertTriangle className="h-4 w-4 text-yellow-600" />} />
+                    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                        <StatsCard title="Penjualan Hari Ini" value={stats.penjualan_hari_ini} icon={<DollarSign />} />
+                        <StatsCard title="Penjualan Bulan Ini" value={stats.penjualan_bulan_ini} icon={<TrendingUp />} />
+                        <StatsCard title="Transaksi Hari Ini" value={stats.transaksi_hari_ini} icon={<ShoppingCart />} />
+                        <StatsCard title="Service Aktif" value={stats.service_aktif} icon={<Wrench />} />
+                        <StatsCard title="Stok Cabang" value={stats.stok_cabang} icon={<Package />} />
+                        <StatsCard title="Stok Rendah" value={stats.stok_rendah} icon={<AlertTriangle />} />
                     </div>
                 )}
 
