@@ -17,37 +17,76 @@ class BarangController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $isSuperAdmin = $user->hasRole('super_admin');
         
-        // Jika super admin, load stok semua cabang. Jika tidak, hanya cabang sendiri
-        $barang = Barang::with(['kategori', 'suplier', 'stokCabang' => function ($query) use ($isSuperAdmin, $user) {
-                if (!$isSuperAdmin) {
-                    $query->where('cabang_id', $user->cabang_id);
+        // Build query dengan pagination dan filtering
+        $query = Barang::query()
+            ->select([
+                'id', 'kategori_id', 'suplier_id', 'kode_barang', 
+                'nama_barang', 'barcode', 'merk', 'tipe', 'satuan',
+                'harga_asal', 'harga_konsumen', 'harga_konter', 'harga_partai',
+                'stok_minimal', 'status_aktif'
+            ])
+            ->with([
+                'kategori:id,nama_kategori',
+                'suplier:id,nama_suplier',
+                'stokCabang' => function ($query) use ($isSuperAdmin, $user) {
+                    if (!$isSuperAdmin) {
+                        $query->where('cabang_id', $user->cabang_id);
+                    }
+                    $query->select('id', 'barang_id', 'cabang_id', 'jumlah_stok')
+                          ->with('cabang:id,nama_cabang');
                 }
-                $query->with('cabang:id,nama_cabang');
-            }])
-            ->orderBy('nama_barang')
-            ->get();
+            ]);
         
-        // Get kategori and suplier for form
-        $kategori = KategoriBarang::where('status_aktif', true)
+        // Apply filters if provided
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_barang', 'like', "%{$search}%")
+                  ->orWhere('kode_barang', 'like', "%{$search}%");
+            });
+        }
+        
+        if ($request->has('kategori_id') && $request->kategori_id) {
+            $query->where('kategori_id', $request->kategori_id);
+        }
+        
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status_aktif', $request->status);
+        }
+        
+        // Pagination
+        $barang = $query->orderBy('nama_barang')->paginate(15);
+        
+        // Get kategori and suplier for form - cache selectively
+        $kategori = KategoriBarang::select('id', 'nama_kategori')
+            ->where('status_aktif', true)
             ->orderBy('nama_kategori')
             ->get();
         
-        $suplier = Suplier::where('status_aktif', true)
+        $suplier = Suplier::select('id', 'nama_suplier')
+            ->where('status_aktif', true)
             ->orderBy('nama_suplier')
             ->get();
         
         // Get all cabang untuk super admin
-        $cabang = $isSuperAdmin ? Cabang::where('status_aktif', true)->orderBy('nama_cabang')->get() : [];
+        $cabang = $isSuperAdmin 
+            ? Cabang::select('id', 'nama_cabang')
+                ->where('status_aktif', true)
+                ->orderBy('nama_cabang')
+                ->get() 
+            : [];
         
-        // Stats
-        $total = Barang::count();
-        $aktif = Barang::where('status_aktif', true)->count();
-        $nonaktif = Barang::where('status_aktif', false)->count();
+        // Stats - optimized with single query
+        $stats = Barang::selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN status_aktif = 1 THEN 1 ELSE 0 END) as aktif,
+            SUM(CASE WHEN status_aktif = 0 THEN 1 ELSE 0 END) as nonaktif
+        ')->first();
 
         return Inertia::render('barang/index', [
             'barang' => $barang,
@@ -55,10 +94,11 @@ class BarangController extends Controller
             'suplier' => $suplier,
             'cabang' => $cabang,
             'is_super_admin' => $isSuperAdmin,
+            'filters' => $request->only(['search', 'kategori_id', 'status']),
             'stats' => [
-                'total' => $total,
-                'aktif' => $aktif,
-                'nonaktif' => $nonaktif,
+                'total' => (int)$stats->total,
+                'aktif' => (int)$stats->aktif,
+                'nonaktif' => (int)$stats->nonaktif,
             ],
         ]);
     }

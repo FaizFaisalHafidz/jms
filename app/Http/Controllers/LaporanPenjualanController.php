@@ -13,6 +13,34 @@ class LaporanPenjualanController extends Controller
 {
     public function index(Request $request)
     {
+        $cabangList = Cabang::where('status_aktif', true)->get();
+        $cabangId = $request->input('cabang_id');
+
+        // Jika tidak ada cabang yang dipilih, kembalikan hanya list cabang
+        if (!$cabangId) {
+            return Inertia::render('laporan/penjualan/index', [
+                'mode' => 'selection',
+                'cabang_list' => $cabangList,
+                'filters' => [
+                    'filter_type' => 'harian',
+                ],
+                'stats' => [ // Default stats or null
+                    'total_penjualan' => 0,
+                    'total_transaksi' => 0,
+                    'total_item' => 0,
+                    'total_laba' => 0,
+                    'total_service_omzet' => 0,
+                    'total_service_count' => 0,
+                    'total_service_laba' => 0,
+                ],
+            ]);
+        }
+
+        $selectedCabang = Cabang::find($cabangId);
+        if (!$selectedCabang) {
+            return redirect()->route('laporan.penjualan');
+        }
+
         // Filter type: 'harian' atau 'bulanan'
         $filterType = $request->input('filter_type', 'harian');
         
@@ -27,41 +55,51 @@ class LaporanPenjualanController extends Controller
             $endDate = Carbon::createFromDate($tahun, $bulan, 1)->endOfMonth();
         }
 
-        // Total Penjualan
-        $totalPenjualan = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
-            ->sum('total_bayar');
+        // Base Query Scoped by Cabang
+        $transaksiQuery = Transaksi::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate]);
 
-        $totalTransaksi = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
-            ->count();
-
+        // Stats
+        $totalPenjualan = (clone $transaksiQuery)->sum('total_bayar');
+        $totalTransaksi = (clone $transaksiQuery)->count();
+        $totalLaba = (clone $transaksiQuery)->sum('total_laba');
+        
         $totalItem = DB::table('detail_transaksi')
             ->join('transaksi', 'detail_transaksi.transaksi_id', '=', 'transaksi.id')
+            ->where('transaksi.cabang_id', $cabangId)
             ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
             ->sum('detail_transaksi.jumlah');
 
-        $totalLaba = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
-            ->sum('total_laba');
+        // Service Query Scoped by Cabang
+        $serviceQuery = \App\Models\ServiceHp::where('cabang_id', $cabangId)
+            ->whereBetween('updated_at', [$startDate, $endDate])
+            ->whereIn('status_service', ['selesai', 'diambil']);
 
-        // Penjualan per Cabang
-        $penjualanPerCabang = Cabang::where('status_aktif', true)
-            ->withSum(['transaksi as total_penjualan' => function($query) use ($startDate, $endDate) {
-                $query->whereBetween('tanggal_transaksi', [$startDate, $endDate]);
-            }], 'total_bayar')
-            ->withCount(['transaksi as total_transaksi' => function($query) use ($startDate, $endDate) {
-                $query->whereBetween('tanggal_transaksi', [$startDate, $endDate]);
-            }])
-            ->get()
-            ->map(function($cabang) {
-                return [
-                    'nama_cabang' => $cabang->nama_cabang,
-                    'kota' => $cabang->kota,
-                    'total_penjualan' => $cabang->total_penjualan ?? 0,
-                    'total_transaksi' => $cabang->total_transaksi ?? 0,
-                ];
-            });
+        // Stats Service
+        $totalServiceOmzet = (clone $serviceQuery)->sum('total_biaya');
+        $totalServiceCount = (clone $serviceQuery)->count();
+        $totalServiceLaba = (clone $serviceQuery)->sum('laba_service');
 
+        // Daftar Transaksi (Penjualan)
+        $daftarTransaksi = Transaksi::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->with(['detailTransaksi:id,transaksi_id,nama_barang,jumlah,harga_jual,subtotal'])
+            ->orderByDesc('tanggal_transaksi')
+            ->paginate(10, ['*'], 'page_transaksi')
+            ->withQueryString();
+
+        // Daftar Service
+        $daftarService = (clone $serviceQuery)
+            ->orderByDesc('updated_at')
+            ->paginate(10, ['*'], 'page_service')
+            ->withQueryString();
+            
+        // Jika ingin juga menampilkan service yang masuk tapi belum selesai, bisa disesuaikan querynya
+        // Untuk laporan keuangan biasanya yang sudah lunas/selesai.
+        
         // Grafik Penjualan
-        $grafikPenjualan = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+        $grafikPenjualan = Transaksi::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
             ->select(
                 DB::raw('DATE(tanggal_transaksi) as tanggal'),
                 DB::raw('SUM(total_bayar) as total'),
@@ -71,9 +109,10 @@ class LaporanPenjualanController extends Controller
             ->orderBy('tanggal')
             ->get();
 
-        // Top 10 Barang Terlaris
+        // Top Barang
         $topBarang = DB::table('detail_transaksi')
             ->join('transaksi', 'detail_transaksi.transaksi_id', '=', 'transaksi.id')
+            ->where('transaksi.cabang_id', $cabangId)
             ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
             ->select(
                 'detail_transaksi.nama_barang',
@@ -85,29 +124,38 @@ class LaporanPenjualanController extends Controller
             ->limit(10)
             ->get();
 
-        // Penjualan per Metode Pembayaran
-        $perMetodePembayaran = Transaksi::whereBetween('tanggal_transaksi', [$startDate, $endDate])
+        $perMetodePembayaran = Transaksi::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
             ->select('metode_pembayaran', DB::raw('COUNT(*) as jumlah'), DB::raw('SUM(total_bayar) as total'))
             ->groupBy('metode_pembayaran')
             ->get();
 
         return Inertia::render('laporan/penjualan/index', [
+            'mode' => 'detail',
+            'cabang_list' => $cabangList,
+            'selected_cabang' => $selectedCabang,
             'filters' => [
                 'filter_type' => $filterType,
                 'tanggal' => $filterType === 'harian' ? ($request->input('tanggal', date('Y-m-d'))) : null,
                 'tahun' => $filterType === 'bulanan' ? ($request->input('tahun', date('Y'))) : null,
                 'bulan' => $filterType === 'bulanan' ? ($request->input('bulan', date('m'))) : null,
+                'cabang_id' => $cabangId,
             ],
             'stats' => [
                 'total_penjualan' => $totalPenjualan,
                 'total_transaksi' => $totalTransaksi,
                 'total_item' => $totalItem,
                 'total_laba' => $totalLaba,
+                'total_service_omzet' => $totalServiceOmzet,
+                'total_service_count' => $totalServiceCount,
+                'total_service_laba' => $totalServiceLaba,
             ],
-            'penjualan_per_cabang' => $penjualanPerCabang,
             'grafik_penjualan' => $grafikPenjualan,
             'top_barang' => $topBarang,
             'per_metode_pembayaran' => $perMetodePembayaran,
+            'daftar_transaksi' => $daftarTransaksi,
+            'daftar_service' => $daftarService,
         ]);
     }
 }
+

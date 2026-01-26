@@ -43,7 +43,10 @@ class ReturPenjualanController extends Controller
                     'kode_barang' => $item->kode_barang,
                     'nama_barang' => $item->nama_barang,
                     'barcode' => $item->barcode,
-                    'harga_jual' => $item->harga_konsumen, // Default to consumer price
+                    'harga_konsumen' => $item->harga_konsumen,
+                    'harga_konter' => $item->harga_konter,
+                    'harga_partai' => $item->harga_partai,
+                    'harga_jual' => $item->harga_konsumen, // Default for backward compatibility
                     'stok' => $stok ? $stok->jumlah_stok : 0,
                     'satuan' => $item->satuan,
                 ];
@@ -294,7 +297,7 @@ class ReturPenjualanController extends Controller
                         'jumlah' => $item['qty'],
                         'harga_asal' => $barang->harga_asal,
                         'harga_jual' => $item['harga_jual'],
-                        'jenis_harga' => 'konsumen',
+                        'jenis_harga' => $item['jenis_harga'] ?? 'konsumen',
                         'diskon_item' => 0,
                         'subtotal' => $item['qty'] * $item['harga_jual'],
                         'laba' => ($item['harga_jual'] - $barang->harga_asal) * $item['qty'],

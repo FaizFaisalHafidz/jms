@@ -71,6 +71,10 @@ interface ReplacementItem {
     nama_barang: string;
     qty: number;
     harga_jual: number;
+    harga_konsumen: number;
+    harga_konter: number;
+    harga_partai: number;
+    jenis_harga: "konsumen" | "konter" | "partai";
     stok: number;
 }
 
@@ -190,7 +194,11 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
             return;
         }
 
-        const existingItem = replacementItems.find((i) => i.id === item.id);
+        // Check if same item with same price type exists
+        const existingItem = replacementItems.find((i) =>
+            i.id === item.id && i.jenis_harga === item.jenis_harga
+        );
+
         if (existingItem) {
             if (existingItem.qty + 1 > item.stok) {
                 toast.error("Stok tidak mencukupi");
@@ -198,11 +206,13 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
             }
             setReplacementItems(
                 replacementItems.map((i) =>
-                    i.id === item.id ? { ...i, qty: i.qty + 1 } : i
+                    i.id === item.id && i.jenis_harga === item.jenis_harga
+                        ? { ...i, qty: i.qty + 1 }
+                        : i
                 )
             );
         } else {
-            setReplacementItems([...replacementItems, { ...item, qty: 1 }]);
+            setReplacementItems([...replacementItems, item]);
         }
         setSearchQuery(""); // clear search
         setSearchResults([]);
@@ -364,7 +374,14 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
             alasan_retur: alasanRetur,
             jenis_retur: jenisRetur,
             is_manual_mode: isManualMode,
-            items_pengganti: (jenisRetur === 'ganti_barang' ? replacementItems : []),
+            items_pengganti: (jenisRetur === 'ganti_barang'
+                ? replacementItems.map(item => ({
+                    id: item.id,
+                    qty: item.qty,
+                    harga_jual: item.harga_jual,
+                    jenis_harga: item.jenis_harga,
+                }))
+                : []),
             net_payment: netPayment,
         };
 
@@ -940,23 +957,83 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                         />
                                         {searchResults.length > 0 && (
-                                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                            <div className="absolute z-10 w-full mt-1 bg-white border rounded-xl shadow-lg max-h-96 overflow-y-auto">
                                                 {searchResults.map((item) => (
                                                     <div
                                                         key={item.id}
-                                                        className="flex items-center justify-between p-2 hover:bg-muted cursor-pointer"
-                                                        onClick={() => handleAddReplacement(item as any)}
+                                                        className="p-4 hover:bg-slate-50 border-b last:border-0"
                                                     >
-                                                        <div>
-                                                            <div className="font-medium">
-                                                                {item.nama_barang}
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div className="flex-1">
+                                                                <div className="font-medium text-sm text-slate-900">
+                                                                    {item.nama_barang}
+                                                                </div>
+                                                                <div className="text-xs text-slate-500 mt-0.5">
+                                                                    {item.kode_barang}
+                                                                </div>
                                                             </div>
-                                                            <div className="text-xs text-muted-foreground">
-                                                                {item.kode_barang} | Stok: {item.stok}
+                                                            <div className={`text-xs font-medium px-2 py-1 rounded ${item.stok > 10
+                                                                ? 'bg-emerald-100 text-emerald-700'
+                                                                : item.stok > 0
+                                                                    ? 'bg-amber-100 text-amber-700'
+                                                                    : 'bg-red-100 text-red-700'
+                                                                }`}>
+                                                                Stok: {item.stok}
                                                             </div>
                                                         </div>
-                                                        <div className="text-sm font-medium">
-                                                            Rp {item.harga_jual.toLocaleString("id-ID")}
+
+                                                        {/* Price Selection Buttons */}
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAddReplacement({
+                                                                    ...item,
+                                                                    harga_jual: item.harga_konsumen,
+                                                                    jenis_harga: "konsumen",
+                                                                    qty: 1
+                                                                })}
+                                                                disabled={item.stok <= 0}
+                                                                className="flex flex-col items-center p-2 border border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                <span className="text-xs text-blue-600 font-medium mb-1">Konsumen</span>
+                                                                <span className="text-sm font-bold text-slate-900">
+                                                                    Rp {item.harga_konsumen.toLocaleString("id-ID")}
+                                                                </span>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAddReplacement({
+                                                                    ...item,
+                                                                    harga_jual: item.harga_konter,
+                                                                    jenis_harga: "konter",
+                                                                    qty: 1
+                                                                })}
+                                                                disabled={item.stok <= 0}
+                                                                className="flex flex-col items-center p-2 border border-purple-200 rounded-lg hover:bg-purple-50 hover:border-purple-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                <span className="text-xs text-purple-600 font-medium mb-1">Konter</span>
+                                                                <span className="text-sm font-bold text-slate-900">
+                                                                    Rp {item.harga_konter.toLocaleString("id-ID")}
+                                                                </span>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleAddReplacement({
+                                                                    ...item,
+                                                                    harga_jual: item.harga_partai,
+                                                                    jenis_harga: "partai",
+                                                                    qty: 1
+                                                                })}
+                                                                disabled={item.stok <= 0}
+                                                                className="flex flex-col items-center p-2 border border-emerald-200 rounded-lg hover:bg-emerald-50 hover:border-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                <span className="text-xs text-emerald-600 font-medium mb-1">Partai</span>
+                                                                <span className="text-sm font-bold text-slate-900">
+                                                                    Rp {item.harga_partai.toLocaleString("id-ID")}
+                                                                </span>
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -973,6 +1050,7 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                                                 <TableHeader>
                                                     <TableRow>
                                                         <TableHead>Nama Barang</TableHead>
+                                                        <TableHead>Jenis Harga</TableHead>
                                                         <TableHead>Qty</TableHead>
                                                         <TableHead>Harga</TableHead>
                                                         <TableHead>Subtotal</TableHead>
@@ -981,10 +1059,20 @@ export default function ReturPenjualanCreate({ transaksis }: Props) {
                                                 </TableHeader>
                                                 <TableBody>
                                                     {replacementItems.map((item, index) => (
-                                                        <TableRow key={index}>
+                                                        <TableRow key={`${item.id}-${item.jenis_harga}-${index}`}>
                                                             <TableCell>
                                                                 <div className="font-medium">{item.nama_barang}</div>
                                                                 <div className="text-xs text-muted-foreground">{item.kode_barang}</div>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.jenis_harga === 'konsumen'
+                                                                    ? 'bg-blue-100 text-blue-700'
+                                                                    : item.jenis_harga === 'konter'
+                                                                        ? 'bg-purple-100 text-purple-700'
+                                                                        : 'bg-emerald-100 text-emerald-700'
+                                                                    }`}>
+                                                                    {item.jenis_harga === 'konsumen' ? 'Konsumen' : item.jenis_harga === 'konter' ? 'Konter' : 'Partai'}
+                                                                </span>
                                                             </TableCell>
                                                             <TableCell>
                                                                 <Input

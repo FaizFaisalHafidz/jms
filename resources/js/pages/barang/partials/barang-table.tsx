@@ -39,7 +39,6 @@ import {
 import axios from 'axios';
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import Barcode from 'react-barcode';
 import { toast } from 'sonner';
 
 interface KategoriBarang {
@@ -86,13 +85,29 @@ interface BarangTableProps {
     barang: Barang[];
     kategori: KategoriBarang[];
     onEdit: (barang: Barang) => void;
+    pagination?: {
+        current_page: number;
+        from: number | null;
+        last_page: number;
+        per_page: number;
+        to: number | null;
+        total: number;
+    };
+    filters?: {
+        search?: string;
+        kategori_id?: string;
+        status?: string;
+    };
 }
 
-export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
+export function BarangTable({ barang, kategori, onEdit, pagination, filters }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
     const [stokValue, setStokValue] = useState<number>(0);
+    const [searchInput, setSearchInput] = useState(filters?.search || '');
+    const [kategoriFilter, setKategoriFilter] = useState(filters?.kategori_id || '');
+    const [statusFilter, setStatusFilter] = useState(filters?.status || '');
 
     const handleDelete = (barang: Barang) => {
         if (
@@ -187,15 +202,8 @@ export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
                 const barcode = row.original.barcode;
                 if (!barcode) return '-';
                 return (
-                    <div className="flex justify-center">
-                        <Barcode 
-                            value={barcode} 
-                            height={40}
-                            width={1.5}
-                            fontSize={10}
-                            margin={2}
-                            displayValue={false}
-                        />
+                    <div className="flex justify-center items-center gap-2 font-mono text-xs">
+                        {barcode}
                     </div>
                 );
             },
@@ -350,32 +358,33 @@ export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 flex-wrap">
                         <Input
                             placeholder="Cari barang..."
-                            value={
-                                (table
-                                    .getColumn('nama_barang')
-                                    ?.getFilterValue() as string) ?? ''
-                            }
-                            onChange={(event) =>
-                                table
-                                    .getColumn('nama_barang')
-                                    ?.setFilterValue(event.target.value)
-                            }
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    router.get('/barang', {
+                                        search: searchInput,
+                                        kategori_id: kategoriFilter,
+                                        status: statusFilter,
+                                    }, { preserveState: true });
+                                }
+                            }}
                             className="max-w-sm"
                         />
                         <Select
-                            value={
-                                (table
-                                    .getColumn('kategori')
-                                    ?.getFilterValue() as string) ?? 'all'
-                            }
-                            onValueChange={(value) =>
-                                table
-                                    .getColumn('kategori')
-                                    ?.setFilterValue(value === 'all' ? '' : value)
-                            }
+                            value={kategoriFilter || 'all'}
+                            onValueChange={(value) => {
+                                const newKategori = value === 'all' ? '' : value;
+                                setKategoriFilter(newKategori);
+                                router.get('/barang', {
+                                    search: searchInput,
+                                    kategori_id: newKategori,
+                                    status: statusFilter,
+                                }, { preserveState: true });
+                            }}
                         >
                             <SelectTrigger className="w-[200px]">
                                 <SelectValue placeholder="Semua Kategori" />
@@ -383,12 +392,58 @@ export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
                             <SelectContent>
                                 <SelectItem value="all">Semua Kategori</SelectItem>
                                 {kategori.map((k) => (
-                                    <SelectItem key={k.id} value={k.nama_kategori}>
+                                    <SelectItem key={k.id} value={k.id.toString()}>
                                         {k.nama_kategori}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
+                        <Select
+                            value={statusFilter || 'all'}
+                            onValueChange={(value) => {
+                                const newStatus = value === 'all' ? '' : value;
+                                setStatusFilter(newStatus);
+                                router.get('/barang', {
+                                    search: searchInput,
+                                    kategori_id: kategoriFilter,
+                                    status: newStatus,
+                                }, { preserveState: true });
+                            }}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Semua Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Status</SelectItem>
+                                <SelectItem value="1">Aktif</SelectItem>
+                                <SelectItem value="0">Nonaktif</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button
+                            onClick={() => {
+                                router.get('/barang', {
+                                    search: searchInput,
+                                    kategori_id: kategoriFilter,
+                                    status: statusFilter,
+                                }, { preserveState: true });
+                            }}
+                            variant="outline"
+                        >
+                            Cari
+                        </Button>
+                        {(searchInput || kategoriFilter || statusFilter) && (
+                            <Button
+                                onClick={() => {
+                                    setSearchInput('');
+                                    setKategoriFilter('');
+                                    setStatusFilter('');
+                                    router.get('/barang', {}, { preserveState: true });
+                                }}
+                                variant="outline"
+                            >
+                                Reset Filter
+                            </Button>
+                        )}
                     </div>
                     <div className="rounded-md border overflow-x-auto">
                         <Table>
@@ -400,10 +455,10 @@ export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
                                                 {header.isPlaceholder
                                                     ? null
                                                     : flexRender(
-                                                          header.column
-                                                              .columnDef.header,
-                                                          header.getContext()
-                                                      )}
+                                                        header.column
+                                                            .columnDef.header,
+                                                        header.getContext()
+                                                    )}
                                             </TableHead>
                                         ))}
                                     </TableRow>
@@ -445,24 +500,44 @@ export function BarangTable({ barang, kategori, onEdit }: BarangTableProps) {
                             </TableBody>
                         </Table>
                     </div>
-                    <div className="flex items-center justify-end space-x-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            Next
-                        </Button>
-                    </div>
+                    {pagination && pagination.last_page > 1 && (
+                        <div className="flex items-center justify-between">
+                            <div className="text-sm text-muted-foreground">
+                                Menampilkan {pagination.from ?? 0} - {pagination.to ?? 0} dari {pagination.total} barang
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        router.get('/barang', {
+                                            ...filters,
+                                            page: pagination.current_page - 1,
+                                        }, { preserveState: true });
+                                    }}
+                                    disabled={pagination.current_page === 1}
+                                >
+                                    Sebelumnya
+                                </Button>
+                                <div className="text-sm">
+                                    Halaman {pagination.current_page} dari {pagination.last_page}
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        router.get('/barang', {
+                                            ...filters,
+                                            page: pagination.current_page + 1,
+                                        }, { preserveState: true });
+                                    }}
+                                    disabled={pagination.current_page === pagination.last_page}
+                                >
+                                    Berikutnya
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>

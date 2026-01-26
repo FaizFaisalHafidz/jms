@@ -48,11 +48,35 @@ interface BarangStats {
     nonaktif: number;
 }
 
+interface PaginatedBarang {
+    data: Barang[];
+    links: {
+        first: string | null;
+        last: string | null;
+        prev: string | null;
+        next: string | null;
+    };
+    meta: {
+        current_page: number;
+        from: number | null;
+        last_page: number;
+        path: string;
+        per_page: number;
+        to: number | null;
+        total: number;
+    };
+}
+
 interface Props {
-    barang: Barang[];
+    barang: PaginatedBarang;
     kategori: KategoriBarang[];
     suplier: Suplier[];
     stats: BarangStats;
+    filters?: {
+        search?: string;
+        kategori_id?: string;
+        status?: string;
+    };
     flash?: {
         success?: string;
         error?: string;
@@ -64,6 +88,7 @@ export default function BarangIndex({
     kategori,
     suplier,
     stats,
+    filters,
     flash,
 }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,7 +147,13 @@ export default function BarangIndex({
 
                 <BarangStats stats={stats} />
 
-                <BarangTable barang={barang} kategori={kategori} onEdit={handleEdit} />
+                <BarangTable
+                    barang={barang.data}
+                    kategori={kategori}
+                    onEdit={handleEdit}
+                    pagination={barang.meta}
+                    filters={filters}
+                />
 
                 <BarangFormModal
                     isOpen={isModalOpen}
@@ -135,7 +166,7 @@ export default function BarangIndex({
                 <BarcodePrintModal
                     isOpen={isPrintModalOpen}
                     onClose={() => setIsPrintModalOpen(false)}
-                    barang={barang}
+                    barang={barang.data}
                 />
             </div>
         </AppLayout>
