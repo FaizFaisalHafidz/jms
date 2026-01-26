@@ -335,8 +335,8 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     body { 
                         font-family: 'Courier New', monospace; 
                         font-size: 7px; 
-                        width: 48mm;
-                        padding: 1mm 2mm;
+                        width: 44mm;
+                        padding: 1mm 0;
                         line-height: 1.1;
                         overflow: hidden;
                         font-weight: bold; /* SEMUA TEBAL */
