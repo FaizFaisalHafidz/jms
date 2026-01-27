@@ -36,7 +36,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface KategoriBarang {
@@ -150,6 +150,24 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
         setEditingStok(null);
         setStokValue(0);
     };
+
+    // Auto-search dengan debounce
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            // Hanya trigger search jika ada perubahan
+            if (searchInput !== filters?.search ||
+                kategoriFilter !== filters?.kategori_id ||
+                statusFilter !== filters?.status) {
+                router.get('/barang', {
+                    search: searchInput,
+                    kategori_id: kategoriFilter,
+                    status: statusFilter,
+                }, { preserveScroll: true, preserveState: false });
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchInput, kategoriFilter, statusFilter]);
 
     const formatRupiah = (value: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -357,15 +375,6 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                             placeholder="Cari barang..."
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    router.get('/barang', {
-                                        search: searchInput,
-                                        kategori_id: kategoriFilter,
-                                        status: statusFilter,
-                                    }, { preserveScroll: true });
-                                }
-                            }}
                             className="max-w-sm"
                         />
                         <Select
@@ -373,11 +382,6 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                             onValueChange={(value) => {
                                 const newKategori = value === 'all' ? '' : value;
                                 setKategoriFilter(newKategori);
-                                router.get('/barang', {
-                                    search: searchInput,
-                                    kategori_id: newKategori,
-                                    status: statusFilter,
-                                }, { preserveScroll: true });
                             }}
                         >
                             <SelectTrigger className="w-[200px]">
@@ -397,11 +401,6 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                             onValueChange={(value) => {
                                 const newStatus = value === 'all' ? '' : value;
                                 setStatusFilter(newStatus);
-                                router.get('/barang', {
-                                    search: searchInput,
-                                    kategori_id: kategoriFilter,
-                                    status: newStatus,
-                                }, { preserveScroll: true });
                             }}
                         >
                             <SelectTrigger className="w-[180px]">
@@ -413,25 +412,12 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                 <SelectItem value="0">Nonaktif</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button
-                            onClick={() => {
-                                router.get('/barang', {
-                                    search: searchInput,
-                                    kategori_id: kategoriFilter,
-                                    status: statusFilter,
-                                }, { preserveScroll: true });
-                            }}
-                            variant="outline"
-                        >
-                            Cari
-                        </Button>
                         {(searchInput || kategoriFilter || statusFilter) && (
                             <Button
                                 onClick={() => {
                                     setSearchInput('');
                                     setKategoriFilter('');
                                     setStatusFilter('');
-                                    router.get('/barang', {}, { preserveScroll: true });
                                 }}
                                 variant="outline"
                             >
