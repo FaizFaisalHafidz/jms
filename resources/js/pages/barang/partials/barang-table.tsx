@@ -36,7 +36,7 @@ import {
 } from '@tanstack/react-table';
 import axios from 'axios';
 import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface KategoriBarang {
@@ -151,19 +151,24 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
         setStokValue(0);
     };
 
+    // Track first render to avoid auto-search on initial load
+    const isFirstRender = useRef(true);
+
     // Auto-search dengan debounce
     useEffect(() => {
+        // Skip pada render pertama
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
         const delayDebounceFn = setTimeout(() => {
-            // Hanya trigger search jika ada perubahan
-            if (searchInput !== filters?.search ||
-                kategoriFilter !== filters?.kategori_id ||
-                statusFilter !== filters?.status) {
-                router.get('/barang', {
-                    search: searchInput,
-                    kategori_id: kategoriFilter,
-                    status: statusFilter,
-                }, { preserveScroll: true, preserveState: false });
-            }
+            // Trigger search saat ada perubahan
+            router.get('/barang', {
+                search: searchInput,
+                kategori_id: kategoriFilter,
+                status: statusFilter,
+            }, { preserveScroll: true, preserveState: false });
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
