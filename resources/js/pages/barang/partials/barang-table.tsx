@@ -511,8 +511,8 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, paginatio
                     </div>
                     <div className="flex items-center justify-between mt-4">
                         <div className="text-sm text-muted-foreground">
-                            {pagination ? (
-                                <>Menampilkan {pagination.from ?? 0} - {pagination.to ?? 0} dari {pagination.total} barang</>
+                            {paginationData ? (
+                                <>Menampilkan {paginationData.from ?? 0} - {paginationData.to ?? 0} dari {paginationData.total} barang</>
                             ) : (
                                 <>Memuat data...</>
                             )}
@@ -521,29 +521,53 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, paginatio
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    router.get('/barang', {
-                                        ...filters,
-                                        page: pagination ? pagination.current_page - 1 : 1,
-                                    }, { preserveScroll: true });
+                                onClick={async () => {
+                                    if (!paginationData) return;
+                                    const newPage = paginationData.current_page - 1;
+                                    try {
+                                        const response = await axios.post('/barang/search', {
+                                            search: searchInput,
+                                            kategori_id: kategoriFilter,
+                                            status: statusFilter,
+                                            page: newPage,
+                                        });
+                                        if (response.data.success) {
+                                            setBarangData(response.data.data);
+                                            setPaginationData(response.data.meta);
+                                        }
+                                    } catch (error) {
+                                        console.error('Pagination error:', error);
+                                    }
                                 }}
-                                disabled={!pagination || pagination.current_page === 1}
+                                disabled={!paginationData || paginationData.current_page === 1}
                             >
                                 Sebelumnya
                             </Button>
                             <div className="text-sm">
-                                Halaman {pagination?.current_page ?? 1} dari {pagination?.last_page ?? 1}
+                                Halaman {paginationData?.current_page ?? 1} dari {paginationData?.last_page ?? 1}
                             </div>
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                    router.get('/barang', {
-                                        ...filters,
-                                        page: pagination ? pagination.current_page + 1 : 1,
-                                    }, { preserveScroll: true });
+                                onClick={async () => {
+                                    if (!paginationData) return;
+                                    const newPage = paginationData.current_page + 1;
+                                    try {
+                                        const response = await axios.post('/barang/search', {
+                                            search: searchInput,
+                                            kategori_id: kategoriFilter,
+                                            status: statusFilter,
+                                            page: newPage,
+                                        });
+                                        if (response.data.success) {
+                                            setBarangData(response.data.data);
+                                            setPaginationData(response.data.meta);
+                                        }
+                                    } catch (error) {
+                                        console.error('Pagination error:', error);
+                                    }
                                 }}
-                                disabled={!pagination || pagination.current_page === pagination.last_page}
+                                disabled={!paginationData || paginationData.current_page === paginationData.last_page}
                             >
                                 Berikutnya
                             </Button>
