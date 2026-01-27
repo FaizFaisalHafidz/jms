@@ -31,11 +31,20 @@ class PosController extends Controller
             'cabang' => $cabang ? $cabang->toArray() : null,
         ]);
         
+        // Get recent transactions for today
+        $recentTransactions = Transaksi::where('cabang_id', $user->cabang_id)
+            ->whereDate('created_at', Carbon::today())
+            ->with(['detailTransaksi', 'kasir:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
         return Inertia::render('pos/index', [
             'cabang_id' => $user->cabang_id,
             'cabang_nama' => $cabang ? $cabang->nama_cabang : 'Toko',
             'cabang_alamat' => $cabang ? $cabang->alamat : '',
             'cabang_telepon' => $cabang ? $cabang->telepon : '',
+            'recentTransactions' => $recentTransactions,
         ]);
     }
 
@@ -77,6 +86,32 @@ class PosController extends Controller
         return response()->json([
             'success' => true,
             'data' => $barang,
+        ]);
+    }
+
+    /**
+     * Search transaksi by nomor_transaksi (today only)
+     */
+    public function searchTransaksi(Request $request)
+    {
+        $keyword = $request->keyword;
+        $cabangId = Auth::user()->cabang_id;
+
+        $query = Transaksi::where('cabang_id', $cabangId)
+            ->whereDate('created_at', Carbon::today());
+
+        if ($keyword) {
+            $query->where('nomor_transaksi', 'LIKE', "%{$keyword}%");
+        }
+
+        $transaksi = $query->with(['detailTransaksi', 'kasir:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $transaksi,
         ]);
     }
 

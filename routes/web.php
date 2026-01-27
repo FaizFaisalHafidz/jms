@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // POS Routes
     Route::get('pos', [\App\Http\Controllers\PosController::class, 'index'])->name('pos.index');
     Route::post('pos/search-barang', [\App\Http\Controllers\PosController::class, 'searchBarang'])->name('pos.search-barang');
+    Route::post('pos/search-transaksi', [\App\Http\Controllers\PosController::class, 'searchTransaksi'])->name('pos.search-transaksi');
     Route::post('pos/store', [\App\Http\Controllers\PosController::class, 'store'])->name('pos.store');
     
     // Service HP Routes

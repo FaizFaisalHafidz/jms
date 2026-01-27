@@ -1,3 +1,11 @@
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { BarcodeCameraScanner } from '@/components/barcode-camera-scanner';
 import { Heading } from '@/components/heading';
 import { Button } from '@/components/ui/button';
@@ -76,14 +84,35 @@ interface TransaksiData {
     metode_pembayaran: string;
 }
 
+interface RecentTransaction {
+    id: number;
+    nomor_transaksi: string;
+    tanggal_transaksi: string;
+    kasir: {
+        id: number;
+        name: string;
+    };
+    nama_pelanggan?: string;
+    telepon_pelanggan?: string;
+    subtotal: number;
+    diskon: number;
+    biaya_service: number;
+    total_bayar: number;
+    jumlah_bayar: number;
+    kembalian: number;
+    metode_pembayaran: string;
+    detail_transaksi: any[];
+}
+
 interface Props {
     cabang_id: number;
     cabang_nama: string;
     cabang_alamat: string;
     cabang_telepon: string;
+    recentTransactions: RecentTransaction[];
 }
 
-export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang_telepon }: Props) {
+export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang_telepon, recentTransactions }: Props) {
     const [keyword, setKeyword] = useState('');
     const [searchResults, setSearchResults] = useState<Barang[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -315,8 +344,9 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
         }
     };
 
-    const handlePrint = () => {
-        if (!transaksiData) return;
+    const handlePrint = (data?: TransaksiData) => {
+        const dataToPrint = data || transaksiData;
+        if (!dataToPrint) return;
 
         const printWindow = window.open('', '', 'width=300,height=600');
         if (!printWindow) return;
@@ -326,7 +356,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
             <html>
             <head>
                 <meta charset="UTF-8">
-                <title>Struk - ${transaksiData.nomor_transaksi}</title>
+                <title>Struk - ${dataToPrint.nomor_transaksi}</title>
                 <style>
                     @media print {
                         @page { margin: 0; size: 57.5mm auto; }
@@ -372,11 +402,11 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 
                 <div class="row">
                     <span>No.</span>
-                    <span class="bold">${transaksiData.nomor_transaksi}</span>
+                    <span class="bold">${dataToPrint.nomor_transaksi}</span>
                 </div>
                 <div class="row">
                     <span>Tgl</span>
-                    <span style="font-size: 7px;">${new Date(transaksiData.tanggal_transaksi).toLocaleString('id-ID', {
+                    <span style="font-size: 7px;">${new Date(dataToPrint.tanggal_transaksi).toLocaleString('id-ID', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
@@ -386,18 +416,18 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 </div>
                 <div class="row">
                     <span>Kasir</span>
-                    <span>${transaksiData.kasir}</span>
+                    <span>${dataToPrint.kasir}</span>
                 </div>
-                ${transaksiData.nama_pelanggan ? `
+                ${dataToPrint.nama_pelanggan ? `
                 <div class="row">
                     <span>Cust</span>
-                    <span>${transaksiData.nama_pelanggan}</span>
+                    <span>${dataToPrint.nama_pelanggan}</span>
                 </div>
                 ` : ''}
                 
                 <div class="line"></div>
                 
-                ${transaksiData.items.map(item => `
+                ${dataToPrint.items.map(item => `
                     <div class="item">
                         <div class="item-name bold">${item.nama_barang}</div>
                         <div class="item-detail">
@@ -411,18 +441,18 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 
                 <div class="row">
                     <span>Subtotal</span>
-                    <span>${formatRupiah(transaksiData.subtotal)}</span>
+                    <span>${formatRupiah(dataToPrint.subtotal)}</span>
                 </div>
-                ${transaksiData.diskon > 0 ? `
+                ${dataToPrint.diskon > 0 ? `
                 <div class="row">
                     <span>Diskon</span>
-                    <span>-${formatRupiah(transaksiData.diskon)}</span>
+                    <span>-${formatRupiah(dataToPrint.diskon)}</span>
                 </div>
                 ` : ''}
-                ${transaksiData.biaya_service > 0 ? `
+                ${dataToPrint.biaya_service > 0 ? `
                 <div class="row">
                     <span>Biaya Servis</span>
-                    <span>${formatRupiah(transaksiData.biaya_service)}</span>
+                    <span>${formatRupiah(dataToPrint.biaya_service)}</span>
                 </div>
                 ` : ''}
                 
@@ -430,15 +460,15 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 
                 <div class="row bold total">
                     <span>TOTAL</span>
-                    <span>${formatRupiah(transaksiData.total_bayar)}</span>
+                    <span>${formatRupiah(dataToPrint.total_bayar)}</span>
                 </div>
                 <div class="row">
                     <span>Bayar</span>
-                    <span>${formatRupiah(transaksiData.jumlah_bayar)}</span>
+                    <span>${formatRupiah(dataToPrint.jumlah_bayar)}</span>
                 </div>
                 <div class="row bold">
                     <span>Kembali</span>
-                    <span>${formatRupiah(transaksiData.kembalian)}</span>
+                    <span>${formatRupiah(dataToPrint.kembalian)}</span>
                 </div>
                 
                 <div class="line"></div>
@@ -461,6 +491,35 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
         }, 250);
     };
 
+    const handlePrintRecent = (transaction: RecentTransaction) => {
+        const data: TransaksiData = {
+            nomor_transaksi: transaction.nomor_transaksi,
+            tanggal_transaksi: transaction.tanggal_transaksi,
+            kasir: transaction.kasir.name,
+            nama_pelanggan: transaction.nama_pelanggan,
+            telepon_pelanggan: transaction.telepon_pelanggan,
+            items: transaction.detail_transaksi.map((dt: any) => ({
+                barang_id: dt.barang_id,
+                kode_barang: '-',
+                nama_barang: dt.nama_barang,
+                jumlah: dt.jumlah,
+                harga_jual: dt.harga_jual,
+                jenis_harga: dt.jenis_harga,
+                diskon_item: dt.diskon_item || 0,
+                subtotal: dt.subtotal,
+                stok: 0
+            })),
+            subtotal: transaction.subtotal,
+            diskon: transaction.diskon,
+            biaya_service: transaction.biaya_service,
+            total_bayar: transaction.total_bayar,
+            jumlah_bayar: transaction.jumlah_bayar,
+            kembalian: transaction.kembalian,
+            metode_pembayaran: transaction.metode_pembayaran
+        };
+        handlePrint(data);
+    };
+
     const handleCloseModal = () => {
         setShowSuccessModal(false);
         setTransaksiData(null);
@@ -474,6 +533,47 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
             minimumFractionDigits: 0,
         }).format(value);
     };
+
+
+    const [transactionSearchKeyword, setTransactionSearchKeyword] = useState('');
+    const [displayedTransactions, setDisplayedTransactions] = useState<RecentTransaction[]>(recentTransactions);
+    const transactionSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Update displayed transactions when prop changes (initial load or after new transaction)
+    useEffect(() => {
+        if (!transactionSearchKeyword) {
+            setDisplayedTransactions(recentTransactions);
+        }
+    }, [recentTransactions, transactionSearchKeyword]);
+
+    const handleTransactionSearch = useCallback(async (value: string) => {
+        setTransactionSearchKeyword(value);
+
+        if (transactionSearchTimeoutRef.current) {
+            clearTimeout(transactionSearchTimeoutRef.current);
+        }
+
+        // If empty, show recent transactions from props
+        if (!value) {
+            setDisplayedTransactions(recentTransactions);
+            return;
+        }
+
+        // Debounce search
+        transactionSearchTimeoutRef.current = setTimeout(async () => {
+            try {
+                const response = await axios.post('/pos/search-transaksi', {
+                    keyword: value,
+                });
+                if (response.data.success) {
+                    setDisplayedTransactions(response.data.data);
+                }
+            } catch (error) {
+                console.error('Transaction search error:', error);
+                toast.error('Gagal mencari transaksi');
+            }
+        }, 300);
+    }, [recentTransactions]);
 
     return (
         <AppLayout>
@@ -678,6 +778,73 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                         ))}
                                     </div>
                                 )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Recent Transactions */}
+                        <Card className="border-0 shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                    <span>Riwayat Transaksi Hari Ini</span>
+                                </CardTitle>
+                                <div className="w-64">
+                                    <Input
+                                        placeholder="Cari No. Transaksi..."
+                                        value={transactionSearchKeyword}
+                                        onChange={(e) => handleTransactionSearch(e.target.value)}
+                                        className="h-9"
+                                    />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Waktu</TableHead>
+                                            <TableHead>No. Transaksi</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                            <TableHead className="text-center">Aksi</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {displayedTransactions.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center text-slate-500 py-4">
+                                                    {transactionSearchKeyword ? 'Tidak ada transaksi ditemukan' : 'Belum ada transaksi hari ini'}
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            displayedTransactions.map((trx) => (
+                                                <TableRow key={trx.id}>
+                                                    <TableCell className="text-xs">
+                                                        {new Date(trx.tanggal_transaksi).toLocaleTimeString('id-ID', {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-xs">
+                                                        {trx.nomor_transaksi}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-medium text-xs">
+                                                        {formatRupiah(trx.total_bayar)}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => handlePrintRecent(trx)}
+                                                            className="h-8 w-8 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                                                            title="Cetak Struk"
+                                                        >
+                                                            <Printer className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
                         </Card>
                     </div>
@@ -904,7 +1071,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                 {/* Action Buttons */}
                                 <div className="flex gap-3 pt-2">
                                     <Button
-                                        onClick={handlePrint}
+                                        onClick={() => handlePrint()}
                                         className="flex-1 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all"
                                     >
                                         <Printer className="mr-2 h-4 w-4" />
