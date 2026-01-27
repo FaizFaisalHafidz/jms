@@ -122,6 +122,7 @@ interface Props extends PageProps {
     total_service_omzet: number;
     total_service_count: number;
     total_service_laba: number;
+    total_keseluruhan: number;
   };
   grafik_penjualan?: GrafikData[];
   top_barang?: TopBarang[];
@@ -362,6 +363,22 @@ export default function LaporanPenjualanPage({
         </Card>
 
         {/* Stats Summary (Compact Grid) */}
+        <div className="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-xl p-4 text-white shadow-sm mb-2 relative overflow-hidden">
+          <div className="relative z-10 flex justify-between items-center">
+            <div>
+              <p className="text-xs font-medium opacity-90">Total Keseluruhan Pendapatan</p>
+              <h3 className="text-2xl font-bold mt-1">{formatRupiah(stats.total_keseluruhan)}</h3>
+              <p className="text-[10px] opacity-75 mt-1">Gabungan Penjualan + Service HP</p>
+            </div>
+            <div className="bg-white/20 p-2.5 rounded-xl">
+              <DollarSign className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          {/* Decorative Pattern */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-8 -mt-8 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/10 rounded-full -ml-8 -mb-8 blur-xl" />
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div className={`rounded-xl p-3 text-white shadow-sm transition-colors duration-300 ${activeTab === 'penjualan' ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-green-500 to-green-600'}`}>
             <p className="text-[10px] font-medium opacity-90">

@@ -70,15 +70,18 @@ class LaporanPenjualanController extends Controller
             ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
             ->sum('detail_transaksi.jumlah');
 
-        // Service Query Scoped by Cabang
-        $serviceQuery = \App\Models\ServiceHp::where('cabang_id', $cabangId)
-            ->whereBetween('updated_at', [$startDate, $endDate])
-            ->whereIn('status_service', ['selesai', 'diambil']);
+        // Service Query Scoped by Cabang (Base for Date and Cabang)
+        $serviceBaseQuery = \App\Models\ServiceHp::where('cabang_id', $cabangId)
+            ->whereBetween('updated_at', [$startDate, $endDate]);
 
-        // Stats Service
-        $totalServiceOmzet = (clone $serviceQuery)->sum('total_biaya');
-        $totalServiceCount = (clone $serviceQuery)->count();
-        $totalServiceLaba = (clone $serviceQuery)->sum('laba_service');
+        // Stats Service (Hanya yang sudah 'diambil' yang dihitung sebagai pendapatan)
+        $serviceStatsQuery = (clone $serviceBaseQuery)->where('status_service', 'diambil');
+
+        $totalServiceOmzet = $serviceStatsQuery->sum('total_biaya');
+        $totalServiceCount = $serviceStatsQuery->count();
+        $totalServiceLaba = $serviceStatsQuery->sum('laba_service');
+
+        $totalKeseluruhan = $totalPenjualan + $totalServiceOmzet;
 
         // Daftar Transaksi (Penjualan)
         $daftarTransaksi = Transaksi::where('cabang_id', $cabangId)
@@ -88,8 +91,9 @@ class LaporanPenjualanController extends Controller
             ->paginate(10, ['*'], 'page_transaksi')
             ->withQueryString();
 
-        // Daftar Service
-        $daftarService = (clone $serviceQuery)
+        // Daftar Service (Menampilkan yang 'selesai' dan 'diambil' untuk monitoring)
+        $daftarService = (clone $serviceBaseQuery)
+            ->whereIn('status_service', ['selesai', 'diambil'])
             ->orderByDesc('updated_at')
             ->paginate(10, ['*'], 'page_service')
             ->withQueryString();
@@ -149,6 +153,7 @@ class LaporanPenjualanController extends Controller
                 'total_service_omzet' => $totalServiceOmzet,
                 'total_service_count' => $totalServiceCount,
                 'total_service_laba' => $totalServiceLaba,
+                'total_keseluruhan' => $totalKeseluruhan,
             ],
             'grafik_penjualan' => $grafikPenjualan,
             'top_barang' => $topBarang,

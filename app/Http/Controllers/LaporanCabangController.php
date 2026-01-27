@@ -46,7 +46,7 @@ class LaporanCabangController extends Controller
 
         // Total Service HP (hanya yang sudah selesai atau diambil)
         $totalService = ServiceHp::where('cabang_id', $cabangId)
-            ->whereIn('status_service', ['selesai', 'diambil'])
+            ->where('status_service', 'diambil')
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {
@@ -196,7 +196,7 @@ class LaporanCabangController extends Controller
 
         // Get all services for the period
         $servicesRaw = ServiceHp::where('cabang_id', $cabangId)
-            ->whereIn('status_service', ['selesai', 'diambil'])
+            ->where('status_service', 'diambil')
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {

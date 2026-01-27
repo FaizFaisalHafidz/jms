@@ -18,13 +18,33 @@ class ServiceHpController extends Controller
     /**
      * Display a listing of service hp
      */
-    public function index()
+    public function index(Request $request)
     {
         $cabangId = Auth::user()->cabang_id;
+        $search = $request->input('search');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         
-        $services = ServiceHp::with(['cabang', 'teknisi', 'kasir'])
-            ->where('cabang_id', $cabangId)
-            ->latest()
+        $query = ServiceHp::with(['cabang', 'teknisi', 'kasir'])
+            ->where('cabang_id', $cabangId);
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('nomor_service', 'like', "%{$search}%")
+                  ->orWhere('nama_pelanggan', 'like', "%{$search}%")
+                  ->orWhere('merk_hp', 'like', "%{$search}%")
+                  ->orWhere('tipe_hp', 'like', "%{$search}%")
+                  ->orWhere('telepon_pelanggan', 'like', "%{$search}%");
+            });
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('tanggal_masuk', [$startDate, $endDate]);
+        } elseif ($startDate) {
+            $query->whereDate('tanggal_masuk', '>=', $startDate);
+        }
+
+        $services = $query->latest()
             ->get()
             ->map(function ($service) {
                 return [
@@ -41,10 +61,13 @@ class ServiceHpController extends Controller
                     'teknisi' => $service->teknisi ? $service->teknisi->name : '-',
                     'tanggal_selesai' => $service->tanggal_selesai,
                     'tanggal_diambil' => $service->tanggal_diambil,
+                    'metode_pembayaran' => $service->metode_pembayaran,
                 ];
             });
 
-        // Stats
+        // Stats (tetap hitung total global untuk indikator kinerja, atau mau difilter juga? 
+        // Biasanya stats dashboard itu global hari ini/pending, tapi jika user mau filter tanggal, 
+        // mungkin list saja yang berubah. Untuk sekarang biar stats tetap general per cabang)
         $stats = [
             'total' => ServiceHp::where('cabang_id', $cabangId)->count(),
             'diterima' => ServiceHp::where('cabang_id', $cabangId)->where('status_service', 'diterima')->count(),
@@ -55,6 +78,11 @@ class ServiceHpController extends Controller
         return Inertia::render('service-hp/index', [
             'services' => $services,
             'stats' => $stats,
+            'filters' => [
+                'search' => $search,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ],
         ]);
     }
 
