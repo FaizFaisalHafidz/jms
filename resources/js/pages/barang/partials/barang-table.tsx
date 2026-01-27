@@ -153,8 +153,10 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
 
     // Track first render to avoid auto-search on initial load
     const isFirstRender = useRef(true);
+    // Track if user is currently typing
+    const isTyping = useRef(false);
 
-    // Auto-search dengan debounce
+    // Auto-search dengan debounce (300ms seperti POS)
     useEffect(() => {
         // Skip pada render pertama
         if (isFirstRender.current) {
@@ -162,16 +164,30 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
             return;
         }
 
+        // Set typing flag
+        isTyping.current = true;
+
         const delayDebounceFn = setTimeout(() => {
-            // Trigger search saat ada perubahan
+            // Trigger search dengan replace (tidak menambah history)
             router.get('/barang', {
                 search: searchInput,
                 kategori_id: kategoriFilter,
                 status: statusFilter,
-            }, { preserveScroll: true, preserveState: false });
-        }, 500);
+            }, {
+                preserveScroll: true,
+                preserveState: false,
+                replace: true, // Tidak menambah history, URL akan berubah tapi tidak bisa back
+                onFinish: () => {
+                    // Clear typing flag after request completes
+                    isTyping.current = false;
+                }
+            });
+        }, 300); // 300ms seperti POS
 
-        return () => clearTimeout(delayDebounceFn);
+        return () => {
+            clearTimeout(delayDebounceFn);
+            isTyping.current = false;
+        };
     }, [searchInput, kategoriFilter, statusFilter]);
 
     const formatRupiah = (value: number) => {
@@ -485,44 +501,46 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                             </TableBody>
                         </Table>
                     </div>
-                    {pagination && (
-                        <div className="flex items-center justify-between">
-                            <div className="text-sm text-muted-foreground">
-                                Menampilkan {pagination.from ?? 0} - {pagination.to ?? 0} dari {pagination.total} barang
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        router.get('/barang', {
-                                            ...filters,
-                                            page: pagination.current_page - 1,
-                                        }, { preserveScroll: true });
-                                    }}
-                                    disabled={pagination.current_page === 1}
-                                >
-                                    Sebelumnya
-                                </Button>
-                                <div className="text-sm">
-                                    Halaman {pagination.current_page} dari {pagination.last_page}
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        router.get('/barang', {
-                                            ...filters,
-                                            page: pagination.current_page + 1,
-                                        }, { preserveScroll: true });
-                                    }}
-                                    disabled={pagination.current_page === pagination.last_page}
-                                >
-                                    Berikutnya
-                                </Button>
-                            </div>
+                    <div className="flex items-center justify-between mt-4">
+                        <div className="text-sm text-muted-foreground">
+                            {pagination ? (
+                                <>Menampilkan {pagination.from ?? 0} - {pagination.to ?? 0} dari {pagination.total} barang</>
+                            ) : (
+                                <>Memuat data...</>
+                            )}
                         </div>
-                    )}
+                        <div className="flex items-center space-x-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    router.get('/barang', {
+                                        ...filters,
+                                        page: pagination ? pagination.current_page - 1 : 1,
+                                    }, { preserveScroll: true });
+                                }}
+                                disabled={!pagination || pagination.current_page === 1}
+                            >
+                                Sebelumnya
+                            </Button>
+                            <div className="text-sm">
+                                Halaman {pagination?.current_page ?? 1} dari {pagination?.last_page ?? 1}
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    router.get('/barang', {
+                                        ...filters,
+                                        page: pagination ? pagination.current_page + 1 : 1,
+                                    }, { preserveScroll: true });
+                                }}
+                                disabled={!pagination || pagination.current_page === pagination.last_page}
+                            >
+                                Berikutnya
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
         </Card>
