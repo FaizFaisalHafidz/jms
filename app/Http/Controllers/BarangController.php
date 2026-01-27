@@ -43,7 +43,7 @@ class BarangController extends Controller
             ]);
         
         // Apply filters if provided
-        if ($request->has('search') && $request->search) {
+        if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('nama_barang', 'like', "%{$search}%")
@@ -52,11 +52,11 @@ class BarangController extends Controller
             });
         }
         
-        if ($request->has('kategori_id') && $request->kategori_id) {
+        if ($request->filled('kategori_id')) {
             $query->where('kategori_id', $request->kategori_id);
         }
         
-        if ($request->has('status') && $request->status !== '') {
+        if ($request->filled('status')) {
             $query->where('status_aktif', $request->status);
         }
         
