@@ -39,7 +39,7 @@ class LaporanLabaRugiController extends Controller
         // ========================================
         // PENDAPATAN DARI SERVICE HP
         // ========================================
-        $serviceData = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+        $serviceData = ServiceHp::where('status_service', 'diambil')
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {
@@ -97,7 +97,7 @@ class LaporanLabaRugiController extends Controller
             ->pluck('total', 'metode_pembayaran');
 
         // Service per metode
-        $servicePerMetode = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+        $servicePerMetode = ServiceHp::where('status_service', 'diambil')
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {
@@ -132,7 +132,7 @@ class LaporanLabaRugiController extends Controller
         // ========================================
         // DETAIL SERVICE HP
         // ========================================
-        $listService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+        $listService = ServiceHp::where('status_service', 'diambil')
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {
@@ -170,7 +170,7 @@ class LaporanLabaRugiController extends Controller
                     ->sum('total_bayar');
 
                 $serviceCabang = ServiceHp::where('cabang_id', $cabang->id)
-                    ->whereIn('status_service', ['selesai', 'diambil'])
+                    ->where('status_service', 'diambil')
                     ->where(function($query) use ($startDate, $endDate) {
                         $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                               ->orWhere(function($q) use ($startDate, $endDate) {

@@ -31,7 +31,7 @@ class LaporanController extends Controller
         $totalPembelian = Pembelian::whereBetween('tanggal_pembelian', [$startDate, $endDate])
             ->sum('total_bayar');
 
-        $totalService = ServiceHp::whereIn('status_service', ['selesai', 'diambil'])
+        $totalService = ServiceHp::where('status_service', 'diambil')
             ->where(function($query) use ($startDate, $endDate) {
                 $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                       ->orWhere(function($q) use ($startDate, $endDate) {
@@ -65,7 +65,7 @@ class LaporanController extends Controller
                     ->sum('total_bayar');
 
                 $service = ServiceHp::where('cabang_id', $cabang->id)
-                    ->whereIn('status_service', ['selesai', 'diambil'])
+                    ->where('status_service', 'diambil')
                     ->where(function($query) use ($startDate, $endDate) {
                         $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
                               ->orWhere(function($q) use ($startDate, $endDate) {
