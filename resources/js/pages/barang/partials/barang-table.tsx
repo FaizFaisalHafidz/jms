@@ -490,39 +490,37 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                             <div className="text-sm text-muted-foreground">
                                 Menampilkan {pagination.from ?? 0} - {pagination.to ?? 0} dari {pagination.total} barang
                             </div>
-                            {pagination.last_page > 1 && (
-                                <div className="flex items-center space-x-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            router.get('/barang', {
-                                                ...filters,
-                                                page: pagination.current_page - 1,
-                                            }, { preserveScroll: true });
-                                        }}
-                                        disabled={pagination.current_page === 1}
-                                    >
-                                        Sebelumnya
-                                    </Button>
-                                    <div className="text-sm">
-                                        Halaman {pagination.current_page} dari {pagination.last_page}
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            router.get('/barang', {
-                                                ...filters,
-                                                page: pagination.current_page + 1,
-                                            }, { preserveScroll: true });
-                                        }}
-                                        disabled={pagination.current_page === pagination.last_page}
-                                    >
-                                        Berikutnya
-                                    </Button>
+                            <div className="flex items-center space-x-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        router.get('/barang', {
+                                            ...filters,
+                                            page: pagination.current_page - 1,
+                                        }, { preserveScroll: true });
+                                    }}
+                                    disabled={pagination.current_page === 1}
+                                >
+                                    Sebelumnya
+                                </Button>
+                                <div className="text-sm">
+                                    Halaman {pagination.current_page} dari {pagination.last_page}
                                 </div>
-                            )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        router.get('/barang', {
+                                            ...filters,
+                                            page: pagination.current_page + 1,
+                                        }, { preserveScroll: true });
+                                    }}
+                                    disabled={pagination.current_page === pagination.last_page}
+                                >
+                                    Berikutnya
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </div>
