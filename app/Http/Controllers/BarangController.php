@@ -315,4 +315,67 @@ class BarangController extends Controller
             'data' => $stok,
         ]);
     }
+
+    /**
+     * Search barang untuk list (AJAX)
+     */
+    public function search(Request $request)
+    {
+        $user = Auth::user();
+        $isSuperAdmin = $user->hasRole('super_admin');
+        
+        // Build query dengan pagination dan filtering
+        $query = Barang::query()
+            ->select([
+                'id', 'kategori_id', 'suplier_id', 'kode_barang', 
+                'nama_barang', 'barcode', 'merk', 'tipe', 'satuan',
+                'harga_asal', 'harga_konsumen', 'harga_konter', 'harga_partai',
+                'stok_minimal', 'status_aktif'
+            ])
+            ->with([
+                'kategori:id,nama_kategori',
+                'suplier:id,nama_suplier',
+                'stokCabang' => function ($query) use ($isSuperAdmin, $user) {
+                    if (!$isSuperAdmin) {
+                        $query->where('cabang_id', $user->cabang_id);
+                    }
+                    $query->select('id', 'barang_id', 'cabang_id', 'jumlah_stok')
+                          ->with('cabang:id,nama_cabang');
+                }
+            ]);
+        
+        // Apply filters if provided
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('nama_barang', 'like', "%{$search}%")
+                  ->orWhere('kode_barang', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
+            });
+        }
+        
+        if ($request->filled('kategori_id')) {
+            $query->where('kategori_id', $request->kategori_id);
+        }
+        
+        if ($request->filled('status')) {
+            $query->where('status_aktif', $request->status);
+        }
+        
+        // Pagination
+        $barang = $query->orderBy('nama_barang')->paginate(15);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $barang->items(),
+            'meta' => [
+                'current_page' => $barang->currentPage(),
+                'from' => $barang->firstItem(),
+                'last_page' => $barang->lastPage(),
+                'per_page' => $barang->perPage(),
+                'to' => $barang->lastItem(),
+                'total' => $barang->total(),
+            ],
+        ]);
+    }
 }

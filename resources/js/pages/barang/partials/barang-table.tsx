@@ -98,13 +98,18 @@ interface BarangTableProps {
     };
 }
 
-export function BarangTable({ barang, kategori, onEdit, pagination, filters }: BarangTableProps) {
+export function BarangTable({ barang: initialBarang, kategori, onEdit, pagination: initialPagination, filters }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
     const [stokValue, setStokValue] = useState<number>(0);
     const [searchInput, setSearchInput] = useState(filters?.search || '');
     const [kategoriFilter, setKategoriFilter] = useState(filters?.kategori_id || '');
     const [statusFilter, setStatusFilter] = useState(filters?.status || '');
+
+    // Local state untuk hasil search (axios POST)
+    const [barangData, setBarangData] = useState<Barang[]>(initialBarang);
+    const [paginationData, setPaginationData] = useState(initialPagination);
+
 
     const handleDelete = (barang: Barang) => {
         if (
@@ -156,7 +161,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
     // Track if user is currently typing
     const isTyping = useRef(false);
 
-    // Auto-search dengan debounce (300ms seperti POS)
+    // Auto-search dengan axios POST (seperti POS - tanpa URL params)
     useEffect(() => {
         // Skip pada render pertama
         if (isFirstRender.current) {
@@ -167,21 +172,24 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
         // Set typing flag
         isTyping.current = true;
 
-        const delayDebounceFn = setTimeout(() => {
-            // Trigger search dengan replace (tidak menambah history)
-            router.get('/barang', {
-                search: searchInput,
-                kategori_id: kategoriFilter,
-                status: statusFilter,
-            }, {
-                preserveScroll: true,
-                preserveState: false,
-                replace: true, // Tidak menambah history, URL akan berubah tapi tidak bisa back
-                onFinish: () => {
-                    // Clear typing flag after request completes
-                    isTyping.current = false;
+        const delayDebounceFn = setTimeout(async () => {
+            try {
+                const response = await axios.post('/barang/search', {
+                    search: searchInput,
+                    kategori_id: kategoriFilter,
+                    status: statusFilter,
+                    page: paginationData?.current_page || 1,
+                });
+
+                if (response.data.success) {
+                    setBarangData(response.data.data);
+                    setPaginationData(response.data.meta);
                 }
-            });
+                isTyping.current = false;
+            } catch (error) {
+                console.error('Search error:', error);
+                isTyping.current = false;
+            }
         }, 300); // 300ms seperti POS
 
         return () => {
@@ -373,7 +381,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
     ];
 
     const table = useReactTable({
-        data: barang,
+        data: barangData,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),

@@ -42,6 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('barang', \App\Http\Controllers\BarangController::class)->except(['show', 'create', 'edit']);
     Route::post('barang/generate-kode', [\App\Http\Controllers\BarangController::class, 'generateKodeBarang'])->name('barang.generate-kode');
     Route::post('barang/update-stok', [\App\Http\Controllers\BarangController::class, 'updateStok'])->name('barang.update-stok');
+    Route::post('barang/search', [\App\Http\Controllers\BarangController::class, 'search'])->name('barang.search');
     
     // Pembelian Routes
     Route::resource('pembelian', \App\Http\Controllers\PembelianController::class)->except(['show', 'edit']);
