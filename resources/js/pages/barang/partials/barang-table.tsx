@@ -27,10 +27,8 @@ import {
 import { router } from '@inertiajs/react';
 import {
     ColumnDef,
-    ColumnFiltersState,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
     getPaginationRowModel,
     getSortedRowModel,
     SortingState,
@@ -102,7 +100,6 @@ interface BarangTableProps {
 
 export function BarangTable({ barang, kategori, onEdit, pagination, filters }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
     const [stokValue, setStokValue] = useState<number>(0);
     const [searchInput, setSearchInput] = useState(filters?.search || '');
@@ -342,12 +339,9 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
         state: {
             sorting,
-            columnFilters,
         },
     });
 
