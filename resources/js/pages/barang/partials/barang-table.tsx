@@ -363,7 +363,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                         search: searchInput,
                                         kategori_id: kategoriFilter,
                                         status: statusFilter,
-                                    }, { preserveState: true });
+                                    }, { preserveScroll: true });
                                 }
                             }}
                             className="max-w-sm"
@@ -377,7 +377,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                     search: searchInput,
                                     kategori_id: newKategori,
                                     status: statusFilter,
-                                }, { preserveState: true });
+                                }, { preserveScroll: true });
                             }}
                         >
                             <SelectTrigger className="w-[200px]">
@@ -401,7 +401,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                     search: searchInput,
                                     kategori_id: kategoriFilter,
                                     status: newStatus,
-                                }, { preserveState: true });
+                                }, { preserveScroll: true });
                             }}
                         >
                             <SelectTrigger className="w-[180px]">
@@ -419,7 +419,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                     search: searchInput,
                                     kategori_id: kategoriFilter,
                                     status: statusFilter,
-                                }, { preserveState: true });
+                                }, { preserveScroll: true });
                             }}
                             variant="outline"
                         >
@@ -431,7 +431,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                     setSearchInput('');
                                     setKategoriFilter('');
                                     setStatusFilter('');
-                                    router.get('/barang', {}, { preserveState: true });
+                                    router.get('/barang', {}, { preserveScroll: true });
                                 }}
                                 variant="outline"
                             >
@@ -507,7 +507,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                         router.get('/barang', {
                                             ...filters,
                                             page: pagination.current_page - 1,
-                                        }, { preserveState: true });
+                                        }, { preserveScroll: true });
                                     }}
                                     disabled={pagination.current_page === 1}
                                 >
@@ -523,7 +523,7 @@ export function BarangTable({ barang, kategori, onEdit, pagination, filters }: B
                                         router.get('/barang', {
                                             ...filters,
                                             page: pagination.current_page + 1,
-                                        }, { preserveState: true });
+                                        }, { preserveScroll: true });
                                     }}
                                     disabled={pagination.current_page === pagination.last_page}
                                 >
