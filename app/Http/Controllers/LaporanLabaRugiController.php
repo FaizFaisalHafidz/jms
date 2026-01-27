@@ -40,13 +40,7 @@ class LaporanLabaRugiController extends Controller
         // PENDAPATAN DARI SERVICE HP
         // ========================================
         $serviceData = ServiceHp::where('status_service', 'diambil')
-            ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
-                      ->orWhere(function($q) use ($startDate, $endDate) {
-                          $q->whereNull('tanggal_selesai')
-                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
-                      });
-            })
+            ->whereBetween('tanggal_diambil', [$startDate, $endDate])
             ->selectRaw('
                 SUM(total_biaya) as total_service,
                 SUM(biaya_spare_part) as total_spare_part,
@@ -98,13 +92,7 @@ class LaporanLabaRugiController extends Controller
 
         // Service per metode
         $servicePerMetode = ServiceHp::where('status_service', 'diambil')
-            ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
-                      ->orWhere(function($q) use ($startDate, $endDate) {
-                          $q->whereNull('tanggal_selesai')
-                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
-                      });
-            })
+            ->whereBetween('tanggal_diambil', [$startDate, $endDate])
             ->selectRaw('
                 metode_pembayaran,
                 SUM(total_biaya) as total
@@ -133,13 +121,7 @@ class LaporanLabaRugiController extends Controller
         // DETAIL SERVICE HP
         // ========================================
         $listService = ServiceHp::where('status_service', 'diambil')
-            ->where(function($query) use ($startDate, $endDate) {
-                $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
-                      ->orWhere(function($q) use ($startDate, $endDate) {
-                          $q->whereNull('tanggal_selesai')
-                            ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
-                      });
-            })
+            ->whereBetween('tanggal_diambil', [$startDate, $endDate])
             ->orderBy('tanggal_masuk')
             ->get(['nomor_service', 'total_biaya', 'metode_pembayaran']);
 
@@ -171,13 +153,7 @@ class LaporanLabaRugiController extends Controller
 
                 $serviceCabang = ServiceHp::where('cabang_id', $cabang->id)
                     ->where('status_service', 'diambil')
-                    ->where(function($query) use ($startDate, $endDate) {
-                        $query->whereBetween('tanggal_selesai', [$startDate, $endDate])
-                              ->orWhere(function($q) use ($startDate, $endDate) {
-                                  $q->whereNull('tanggal_selesai')
-                                    ->whereBetween('tanggal_masuk', [$startDate, $endDate]);
-                              });
-                    })
+                    ->whereBetween('tanggal_diambil', [$startDate, $endDate])
                     ->sum('total_biaya');
 
                 $returCabang = ReturPenjualan::where('cabang_id', $cabang->id)

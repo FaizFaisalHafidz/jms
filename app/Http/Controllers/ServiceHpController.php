@@ -270,9 +270,22 @@ class ServiceHpController extends Controller
                 'status_service' => 'required|in:diterima,dicek,dikerjakan,selesai,diambil,batal',
             ]);
             
-            $serviceHp->update([
-                'status_service' => $request->status_service,
-            ]);
+            $updateData = ['status_service' => $request->status_service];
+            
+            // Auto set tanggal_selesai if status is 'selesai' and not set
+            if ($request->status_service === 'selesai' && !$serviceHp->tanggal_selesai) {
+                $updateData['tanggal_selesai'] = now();
+            }
+            // Auto set tanggal_diambil if status is 'diambil' and not set
+            if ($request->status_service === 'diambil' && !$serviceHp->tanggal_diambil) {
+                $updateData['tanggal_diambil'] = now();
+                // Ensure tanggal_selesai is also set if it was missed
+                if (!$serviceHp->tanggal_selesai) {
+                    $updateData['tanggal_selesai'] = now();
+                }
+            }
+
+            $serviceHp->update($updateData);
             
             if ($request->wantsJson() || $request->expectsJson()) {
                 return response()->json([
@@ -368,8 +381,8 @@ class ServiceHpController extends Controller
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'status_service' => $request->status_service,
                 'teknisi_id' => $request->teknisi_id,
-                'tanggal_selesai' => $request->tanggal_selesai,
-                'tanggal_diambil' => $request->tanggal_diambil,
+                'tanggal_selesai' => $request->tanggal_selesai ?? ($request->status_service === 'selesai' && !$serviceHp->tanggal_selesai ? now() : $serviceHp->tanggal_selesai),
+                'tanggal_diambil' => $request->tanggal_diambil ?? ($request->status_service === 'diambil' && !$serviceHp->tanggal_diambil ? now() : $serviceHp->tanggal_diambil),
                 'keterangan' => $request->keterangan,
             ]);
 

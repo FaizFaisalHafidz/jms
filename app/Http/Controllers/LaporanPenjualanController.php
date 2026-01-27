@@ -71,8 +71,9 @@ class LaporanPenjualanController extends Controller
             ->sum('detail_transaksi.jumlah');
 
         // Service Query Scoped by Cabang (Base for Date and Cabang)
+        // Gunakan tanggal_diambil untuk laporan pendapatan service yang akurat
         $serviceBaseQuery = \App\Models\ServiceHp::where('cabang_id', $cabangId)
-            ->whereBetween('updated_at', [$startDate, $endDate]);
+            ->whereBetween('tanggal_diambil', [$startDate, $endDate]);
 
         // Stats Service (Hanya yang sudah 'diambil' yang dihitung sebagai pendapatan)
         $serviceStatsQuery = (clone $serviceBaseQuery)->where('status_service', 'diambil');
