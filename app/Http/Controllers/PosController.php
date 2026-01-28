@@ -97,11 +97,14 @@ class PosController extends Controller
         $keyword = $request->keyword;
         $cabangId = Auth::user()->cabang_id;
 
-        $query = Transaksi::where('cabang_id', $cabangId)
-            ->whereDate('created_at', Carbon::today());
+        $date = $request->date ? Carbon::parse($request->date) : Carbon::today();
+
+        $query = Transaksi::where('cabang_id', $cabangId);
 
         if ($keyword) {
             $query->where('nomor_transaksi', 'LIKE', "%{$keyword}%");
+        } else {
+            $query->whereDate('created_at', $date);
         }
 
         $transaksi = $query->with(['detailTransaksi', 'kasir:id,name'])

@@ -536,44 +536,46 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
 
 
     const [transactionSearchKeyword, setTransactionSearchKeyword] = useState('');
+    const [transactionSearchDate, setTransactionSearchDate] = useState(new Date().toISOString().split('T')[0]);
     const [displayedTransactions, setDisplayedTransactions] = useState<RecentTransaction[]>(recentTransactions);
     const transactionSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Update displayed transactions when prop changes (initial load or after new transaction)
+    // Initial load sync
     useEffect(() => {
-        if (!transactionSearchKeyword) {
-            setDisplayedTransactions(recentTransactions);
-        }
-    }, [recentTransactions, transactionSearchKeyword]);
+        setDisplayedTransactions(recentTransactions);
+    }, [recentTransactions]);
 
-    const handleTransactionSearch = useCallback(async (value: string) => {
+    const performTransactionSearch = async (keyword: string, date: string) => {
+        try {
+            const response = await axios.post('/pos/search-transaksi', {
+                keyword,
+                date,
+            });
+            if (response.data.success) {
+                setDisplayedTransactions(response.data.data);
+            }
+        } catch (error) {
+            console.error('Transaction search error:', error);
+            toast.error('Gagal mencari transaksi');
+        }
+    };
+
+    const handleTransactionSearch = useCallback((value: string) => {
         setTransactionSearchKeyword(value);
 
         if (transactionSearchTimeoutRef.current) {
             clearTimeout(transactionSearchTimeoutRef.current);
         }
 
-        // If empty, show recent transactions from props
-        if (!value) {
-            setDisplayedTransactions(recentTransactions);
-            return;
-        }
-
-        // Debounce search
-        transactionSearchTimeoutRef.current = setTimeout(async () => {
-            try {
-                const response = await axios.post('/pos/search-transaksi', {
-                    keyword: value,
-                });
-                if (response.data.success) {
-                    setDisplayedTransactions(response.data.data);
-                }
-            } catch (error) {
-                console.error('Transaction search error:', error);
-                toast.error('Gagal mencari transaksi');
-            }
+        transactionSearchTimeoutRef.current = setTimeout(() => {
+            performTransactionSearch(value, transactionSearchDate);
         }, 300);
-    }, [recentTransactions]);
+    }, [transactionSearchDate]);
+
+    const handleTransactionDateChange = useCallback((value: string) => {
+        setTransactionSearchDate(value);
+        performTransactionSearch(transactionSearchKeyword, value);
+    }, [transactionSearchKeyword]);
 
     return (
         <AppLayout>
@@ -786,15 +788,25 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                             <CardHeader className="flex flex-row items-center justify-between pb-2">
                                 <CardTitle className="text-base flex items-center gap-2">
                                     <CheckCircle className="h-5 w-5 text-green-600" />
-                                    <span>Riwayat Transaksi Hari Ini</span>
+                                    <span>Riwayat Transaksi</span>
                                 </CardTitle>
-                                <div className="w-64">
-                                    <Input
-                                        placeholder="Cari No. Transaksi..."
-                                        value={transactionSearchKeyword}
-                                        onChange={(e) => handleTransactionSearch(e.target.value)}
-                                        className="h-9"
-                                    />
+                                <div className="flex gap-2">
+                                    <div className="w-40">
+                                        <Input
+                                            type="date"
+                                            value={transactionSearchDate}
+                                            onChange={(e) => handleTransactionDateChange(e.target.value)}
+                                            className="h-9"
+                                        />
+                                    </div>
+                                    <div className="w-64">
+                                        <Input
+                                            placeholder="Cari No. Transaksi..."
+                                            value={transactionSearchKeyword}
+                                            onChange={(e) => handleTransactionSearch(e.target.value)}
+                                            className="h-9"
+                                        />
+                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -811,7 +823,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                         {displayedTransactions.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={4} className="text-center text-slate-500 py-4">
-                                                    {transactionSearchKeyword ? 'Tidak ada transaksi ditemukan' : 'Belum ada transaksi hari ini'}
+                                                    Tidak ada transaksi ditemukan
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
