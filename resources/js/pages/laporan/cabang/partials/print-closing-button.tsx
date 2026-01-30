@@ -152,24 +152,59 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                             color: #000;
                         }
                         .center { text-align: center; }
-                        .line { border-top: 1px dashed #000; margin: 2px 0; }
-                        .double-line { border-top: 2px solid #000; margin: 3px 0; }
-                        .row { display: flex; justify-content: space-between; margin: 1.5px 0; font-size: 10px; gap: 3px; }
+                        .line { 
+                            border-top: 1px dashed #000; 
+                            margin: 2px auto;
+                            max-width: 85%;
+                        }
+                        .double-line { 
+                            border-top: 2px solid #000; 
+                            margin: 3px auto;
+                            max-width: 85%;
+                        }
+                        .row { 
+                            display: flex; 
+                            justify-content: space-between; 
+                            margin: 1.5px auto; 
+                            font-size: 10px; 
+                            gap: 5px;
+                            max-width: 85%;
+                        }
                         .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                        .row span:first-child { max-width: 55%; }
+                        .row span:first-child { max-width: 60%; }
                         .row span:last-child { text-align: right; flex-shrink: 0; }
                         .center-row { text-align: center; margin: 2px 0; font-size: 9px; word-wrap: break-word; }
                         .section-title { font-size: 10px; margin: 3px 0 2px 0; text-decoration: underline; }
-                        .item { margin: 1px 0; }
-                        .item-row { display: flex; justify-content: space-between; font-size: 9px; gap: 2px; }
+                        .item { 
+                            margin: 1px auto;
+                            max-width: 85%;
+                        }
+                        .item-row { 
+                            display: flex; 
+                            justify-content: space-between; 
+                            font-size: 9px; 
+                            gap: 5px;
+                        }
                         .item-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
                         .item-row span:last-child { flex-shrink: 0; text-align: right; }
-                        .total-row { display: flex; justify-content: space-between; margin: 2px 0; font-size: 10px; }
+                        .total-row { 
+                            display: flex; 
+                            justify-content: space-between; 
+                            margin: 2px auto; 
+                            font-size: 10px;
+                            max-width: 85%;
+                        }
                         .grand-total { font-size: 11px; margin: 4px 0; }
                         .footer { margin-top: 4px; font-size: 8px; line-height: 1.3; font-weight: normal; }
                         .logo { width: 42px; height: auto; margin: 2px auto 2px; display: block; }
                         .metode-section { margin: 3px 0; padding: 2px 0; }
-                        .metode-row { display: flex; justify-content: space-between; font-size: 9px; margin: 1px 0; }
+                        .metode-row { 
+                            display: flex; 
+                            justify-content: space-between; 
+                            font-size: 9px; 
+                            margin: 1px auto;
+                            max-width: 85%;
+                        }
                     </style>
                 </head>
                 <body>

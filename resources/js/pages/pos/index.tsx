@@ -373,15 +373,41 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                         color: #000;
                     }
                     .center { text-align: center; }
-                    .line { border-top: 1px dashed #000; margin: 2px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 1.5px 0; font-size: 10px; gap: 3px; }
-                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
-                    .row span:last-child { text-align: right; }
+                    .line { 
+                        border-top: 1px dashed #000; 
+                        margin: 2px auto;
+                        max-width: 85%;
+                    }
+                    .row { 
+                        display: flex; 
+                        justify-content: space-between; 
+                        margin: 1.5px auto; 
+                        font-size: 10px; 
+                        gap: 5px;
+                        max-width: 85%;
+                    }
+                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                    .row span:first-child { max-width: 60%; }
+                    .row span:last-child { text-align: right; flex-shrink: 0; }
                     .center-row { text-align: center; margin: 2px 0; font-size: 9px; word-wrap: break-word; }
-                    .item { margin: 2px 0; }
-                    .item-name { font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; }
-                    .item-detail { display: flex; justify-content: space-between; font-size: 9px; gap: 3px; margin-top: 1px; }
-                    .item-detail span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 58%; }
+                    .item { 
+                        margin: 2px auto;
+                        max-width: 85%;
+                    }
+                    .item-name { 
+                        font-size: 10px; 
+                        word-wrap: break-word; 
+                        overflow-wrap: break-word; 
+                        line-height: 1.3;
+                    }
+                    .item-detail { 
+                        display: flex; 
+                        justify-content: space-between; 
+                        font-size: 9px; 
+                        gap: 5px; 
+                        margin-top: 1px;
+                    }
+                    .item-detail span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
                     .item-detail span:last-child { flex-shrink: 0; }
                     .total { font-size: 11px; margin-top: 2px; }
                     .footer { margin-top: 4px; font-size: 8px; line-height: 1.3; font-weight: normal; }
