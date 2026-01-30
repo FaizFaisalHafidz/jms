@@ -117,52 +117,46 @@ export default function ServiceHpTable({ services }: Props) {
                     * { margin: 0; padding: 0; box-sizing: border-box; }
                     body { 
                         font-family: 'Courier New', monospace; 
-                        font-size: 7px; 
-                        width: 44mm;
-                        padding: 1mm 0;
-                        line-height: 1.1;
+                        font-size: 10px; 
+                        width: 50mm;
+                        padding: 1mm 1.5mm;
+                        line-height: 1.25;
                         overflow: hidden;
-                        font-weight: bold; /* SEMUA TEBAL */
+                        font-weight: bold;
                         color: #000;
                     }
                     .center { text-align: center; }
-                    /* .bold { font-weight: bold; } Hapus karena semua sudah bold */
                     .line { border-top: 1px dashed #000; margin: 2px 0; }
-                    .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 3px; }
-                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
+                    .row { display: flex; justify-content: space-between; margin: 1.5px 0; font-size: 10px; gap: 3px; }
+                    .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 50%; }
                     .row span:last-child { text-align: right; }
-                    .label { font-size: 6px; color: #000; font-weight: bold; } /* Hitam dan Bold */
-                    .value { font-size: 7px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }
-                    .footer { margin-top: 4px; font-size: 6px; line-height: 1.2; }
-                    .logo { width: 38px; height: auto; margin: 2px auto 2px; display: block; }
+                    .center-row { text-align: center; margin: 2px 0; font-size: 9px; word-wrap: break-word; }
+                    .label { font-size: 9px; color: #000; font-weight: bold; }
+                    .value { font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; }
+                    .footer { margin-top: 4px; font-size: 8px; line-height: 1.3; font-weight: normal; }
+                    .logo { width: 42px; height: auto; margin: 2px auto 2px; display: block; }
                 </style>
             </head>
             <body>
                 <div class="center">
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
-                <div class="center bold" style="font-size: 8px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center" style="font-size: 6px;">Cbg ${selectedService.cabang_nama}</div>
-                ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 6px;">${selectedService.cabang_alamat}</div>` : ''}
-                ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 6px; margin-bottom: 2px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
+                <div class="center" style="font-size: 11px; margin-bottom: 2px; letter-spacing: 0.2px;">JAYA MAKMUR SPAREPART</div>
+                <div class="center" style="font-size: 8px;">Cbg ${selectedService.cabang_nama}</div>
+                ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 8px;">${selectedService.cabang_alamat}</div>` : ''}
+                ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 8px; margin-bottom: 2px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
                 <div class="line"></div>
-                <div class="center bold" style="font-size: 6px; margin-bottom: 2px;">NOTA SERVICE HP</div>
+                <div class="center" style="font-size: 9px; margin-bottom: 2px;">NOTA SERVICE HP</div>
                 <div class="line"></div>
                 
-                <div class="row">
-                    <span>No.:</span>
-                    <span class="bold">${selectedService.nomor_service}</span>
-                </div>
-                <div class="row">
-                    <span>Tgl:</span>
-                    <span>${new Date(selectedService.tanggal_masuk).toLocaleString('id-ID', {
+                <div class="center-row">No. ${selectedService.nomor_service}</div>
+                <div class="center-row">${new Date(selectedService.tanggal_masuk).toLocaleString('id-ID', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
-        })}</span>
-                </div>
+        })}</div>
                 
                 <div class="line"></div>
                 
@@ -217,7 +211,7 @@ export default function ServiceHpTable({ services }: Props) {
                 
                 <div class="line"></div>
                 
-                <div class="row bold" style="font-size: 12px;">
+                <div class="row" style="font-size: 11px;">
                     <span>TOTAL</span>
                     <span>Rp ${selectedService.total_biaya.toLocaleString('id-ID')}</span>
                 </div>

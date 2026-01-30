@@ -143,10 +143,10 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body { 
                             font-family: 'Courier New', monospace; 
-                            font-size: 7px; 
-                            width: 44mm;
-                            padding: 1mm 0;
-                            line-height: 1.1;
+                            font-size: 10px; 
+                            width: 50mm;
+                            padding: 1mm 1.5mm;
+                            line-height: 1.25;
                             overflow: hidden;
                             font-weight: bold;
                             color: #000;
@@ -154,43 +154,38 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                         .center { text-align: center; }
                         .line { border-top: 1px dashed #000; margin: 2px 0; }
                         .double-line { border-top: 2px solid #000; margin: 3px 0; }
-                        .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 7px; gap: 3px; }
+                        .row { display: flex; justify-content: space-between; margin: 1.5px 0; font-size: 10px; gap: 3px; }
                         .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                         .row span:first-child { max-width: 55%; }
                         .row span:last-child { text-align: right; flex-shrink: 0; }
-                        .section-title { font-size: 7px; margin: 3px 0 2px 0; text-decoration: underline; }
+                        .center-row { text-align: center; margin: 2px 0; font-size: 9px; word-wrap: break-word; }
+                        .section-title { font-size: 10px; margin: 3px 0 2px 0; text-decoration: underline; }
                         .item { margin: 1px 0; }
-                        .item-row { display: flex; justify-content: space-between; font-size: 6px; gap: 2px; }
+                        .item-row { display: flex; justify-content: space-between; font-size: 9px; gap: 2px; }
                         .item-row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%; }
                         .item-row span:last-child { flex-shrink: 0; text-align: right; }
-                        .total-row { display: flex; justify-content: space-between; margin: 2px 0; font-size: 8px; }
-                        .grand-total { font-size: 10px; margin: 4px 0; }
-                        .footer { margin-top: 4px; font-size: 6px; line-height: 1.2; }
-                        .logo { width: 38px; height: auto; margin: 2px auto 2px; display: block; }
+                        .total-row { display: flex; justify-content: space-between; margin: 2px 0; font-size: 10px; }
+                        .grand-total { font-size: 11px; margin: 4px 0; }
+                        .footer { margin-top: 4px; font-size: 8px; line-height: 1.3; font-weight: normal; }
+                        .logo { width: 42px; height: auto; margin: 2px auto 2px; display: block; }
                         .metode-section { margin: 3px 0; padding: 2px 0; }
-                        .metode-row { display: flex; justify-content: space-between; font-size: 6px; margin: 1px 0; }
+                        .metode-row { display: flex; justify-content: space-between; font-size: 9px; margin: 1px 0; }
                     </style>
                 </head>
                 <body>
                     <div class="center">
                         <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                     </div>
-                    <div class="center" style="font-size: 8px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
-                    <div class="center" style="font-size: 6px;">Cbg ${data.cabang.nama}</div>
-                    ${data.cabang.alamat !== '-' ? `<div class="center" style="font-size: 6px;">${data.cabang.alamat}</div>` : ''}
-                    ${data.cabang.telepon !== '-' ? `<div class="center" style="font-size: 6px; margin-bottom: 2px;">Telp: ${data.cabang.telepon}</div>` : ''}
+                    <div class="center" style="font-size: 11px; margin-bottom: 2px; letter-spacing: 0.2px;">JAYA MAKMUR SPAREPART</div>
+                    <div class="center" style="font-size: 8px;">Cbg ${data.cabang.nama}</div>
+                    ${data.cabang.alamat !== '-' ? `<div class="center" style="font-size: 8px;">${data.cabang.alamat}</div>` : ''}
+                    ${data.cabang.telepon !== '-' ? `<div class="center" style="font-size: 8px; margin-bottom: 2px;">Telp: ${data.cabang.telepon}</div>` : ''}
                     <div class="line"></div>
-                    <div class="center" style="font-size: 7px; margin-bottom: 2px;">${title}</div>
+                    <div class="center" style="font-size: 9px; margin-bottom: 2px;">${title}</div>
                     <div class="line"></div>
                     
-                    <div class="row">
-                        <span>Periode:</span>
-                        <span>${data.periode}</span>
-                    </div>
-                    <div class="row">
-                        <span>Dicetak:</span>
-                        <span>${data.tanggal_cetak}</span>
-                    </div>
+                    <div class="center-row">Periode: ${data.periode}</div>
+                    <div class="center-row">Dicetak: ${data.tanggal_cetak}</div>
                     
                     <div class="line"></div>
                     
