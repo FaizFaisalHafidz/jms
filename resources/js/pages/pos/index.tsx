@@ -376,7 +376,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     .line { 
                         border-top: 1px dashed #000; 
                         margin: 2px auto;
-                        max-width: 85%;
+                        max-width: 80%;
                     }
                     .row { 
                         display: flex; 
@@ -384,7 +384,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                         margin: 1.5px auto; 
                         font-size: 10px; 
                         gap: 5px;
-                        max-width: 85%;
+                        max-width: 80%;
                     }
                     .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                     .row span:first-child { max-width: 60%; }
@@ -392,7 +392,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     .center-row { text-align: center; margin: 2px 0; font-size: 9px; word-wrap: break-word; }
                     .item { 
                         margin: 2px auto;
-                        max-width: 85%;
+                        max-width: 80%;
                     }
                     .item-name { 
                         font-size: 10px; 

@@ -155,12 +155,12 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                         .line { 
                             border-top: 1px dashed #000; 
                             margin: 2px auto;
-                            max-width: 85%;
+                            max-width: 80%;
                         }
                         .double-line { 
                             border-top: 2px solid #000; 
                             margin: 3px auto;
-                            max-width: 85%;
+                            max-width: 80%;
                         }
                         .row { 
                             display: flex; 
@@ -168,7 +168,7 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                             margin: 1.5px auto; 
                             font-size: 10px; 
                             gap: 5px;
-                            max-width: 85%;
+                            max-width: 80%;
                         }
                         .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                         .row span:first-child { max-width: 60%; }
@@ -177,7 +177,7 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                         .section-title { font-size: 10px; margin: 3px 0 2px 0; text-decoration: underline; }
                         .item { 
                             margin: 1px auto;
-                            max-width: 85%;
+                            max-width: 80%;
                         }
                         .item-row { 
                             display: flex; 
@@ -192,7 +192,7 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                             justify-content: space-between; 
                             margin: 2px auto; 
                             font-size: 10px;
-                            max-width: 85%;
+                            max-width: 80%;
                         }
                         .grand-total { font-size: 11px; margin: 4px 0; }
                         .footer { margin-top: 4px; font-size: 8px; line-height: 1.3; font-weight: normal; }
@@ -203,7 +203,7 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                             justify-content: space-between; 
                             font-size: 9px; 
                             margin: 1px auto;
-                            max-width: 85%;
+                            max-width: 80%;
                         }
                     </style>
                 </head>

@@ -129,7 +129,7 @@ export default function ServiceHpTable({ services }: Props) {
                     .line { 
                         border-top: 1px dashed #000; 
                         margin: 2px auto;
-                        max-width: 85%;
+                        max-width: 80%;
                     }
                     .row { 
                         display: flex; 
@@ -137,14 +137,14 @@ export default function ServiceHpTable({ services }: Props) {
                         margin: 1.5px auto; 
                         font-size: 10px; 
                         gap: 5px;
-                        max-width: 85%;
+                        max-width: 80%;
                     }
                     .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                     .row span:first-child { max-width: 60%; }
                     .row span:last-child { text-align: right; flex-shrink: 0; }
                     .center-row { text-align: center; margin: 2px 0; font-size: 9px; word-wrap: break-word; }
-                    .label { font-size: 9px; color: #000; font-weight: bold; margin: 0 auto; max-width: 85%; }
-                    .value { font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; margin: 0 auto; max-width: 85%; }
+                    .label { font-size: 9px; color: #000; font-weight: bold; margin: 0 auto; max-width: 80%; }
+                    .value { font-size: 10px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; margin: 0 auto; max-width: 80%; }
                     .footer { margin-top: 4px; font-size: 8px; line-height: 1.3; font-weight: normal; }
                     .logo { width: 42px; height: auto; margin: 2px auto 2px; display: block; }
                 </style>
