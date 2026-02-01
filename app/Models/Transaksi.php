@@ -72,4 +72,9 @@ class Transaksi extends Model
     {
         return $this->hasOne(Faktur::class);
     }
+
+    public function pembayaran(): HasMany
+    {
+        return $this->hasMany(TransaksiPembayaran::class);
+    }
 }

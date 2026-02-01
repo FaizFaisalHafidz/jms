@@ -82,6 +82,7 @@ interface TransaksiData {
     jumlah_bayar: number;
     kembalian: number;
     metode_pembayaran: string;
+    pembayaran?: { metode_pembayaran: string; nominal: number }[];
 }
 
 interface RecentTransaction {
@@ -102,6 +103,7 @@ interface RecentTransaction {
     kembalian: number;
     metode_pembayaran: string;
     detail_transaksi: any[];
+    pembayaran?: { metode_pembayaran: string; nominal: number }[];
 }
 
 interface Props {
@@ -118,6 +120,15 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
     const [cart, setCart] = useState<CartItem[]>([]);
     const [showResults, setShowResults] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Split Payment State
+    const [isSplitPayment, setIsSplitPayment] = useState(false);
+    const [payments, setPayments] = useState<{ id: number; method: string; amount: number }[]>([]);
+
+    // State for split payment input
+    const [splitMethod, setSplitMethod] = useState('tunai');
+    const [splitAmount, setSplitAmount] = useState(0);
+
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [transaksiData, setTransaksiData] = useState<TransaksiData | null>(null);
 
@@ -273,7 +284,33 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
     };
 
     const calculateKembalian = () => {
+        if (isSplitPayment) {
+            const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+            return totalPaid - calculateTotal();
+        }
         return jumlahBayar - calculateTotal();
+    };
+
+    const addPayment = () => {
+        if (splitAmount <= 0) return;
+
+        const newPayment = {
+            id: Date.now(),
+            method: splitMethod,
+            amount: splitAmount
+        };
+
+        setPayments([...payments, newPayment]);
+        setSplitAmount(0);
+        // Reset method to default or keep it? Keep it.
+    };
+
+    const removePayment = (id: number) => {
+        setPayments(payments.filter(p => p.id !== id));
+    };
+
+    const calculateSplitTotalPaid = () => {
+        return payments.reduce((sum, p) => sum + p.amount, 0);
     };
 
     const handleCheckout = async () => {
@@ -283,24 +320,39 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
         }
 
         const total = calculateTotal();
-        if (jumlahBayar < total) {
+        const paid = isSplitPayment ? calculateSplitTotalPaid() : jumlahBayar;
+
+        if (paid < total) {
             toast.error('Jumlah bayar kurang dari total');
             return;
         }
 
         setIsProcessing(true);
         try {
-            const response = await axios.post('/pos/store', {
+            const payload: any = {
                 jenis_transaksi: 'retail',
                 nama_pelanggan: namaPelanggan,
                 telepon_pelanggan: teleponPelanggan,
-                metode_pembayaran: metodePembayaran,
                 diskon: diskon,
                 biaya_service: biayaService,
-                jumlah_bayar: jumlahBayar,
                 keterangan: keterangan,
                 detail: cart,
-            });
+            };
+
+            if (isSplitPayment) {
+                payload.pembayaran = payments.map(p => ({
+                    metode_pembayaran: p.method,
+                    nominal: p.amount
+                }));
+                // These are ignored by backend if pembayaran exists, but good for validation bypass
+                payload.metode_pembayaran = 'split';
+                payload.jumlah_bayar = paid;
+            } else {
+                payload.metode_pembayaran = metodePembayaran;
+                payload.jumlah_bayar = jumlahBayar;
+            }
+
+            const response = await axios.post('/pos/store', payload);
 
             if (response.data.success) {
                 const transaksi = response.data.data;
@@ -317,9 +369,10 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     diskon: diskon,
                     biaya_service: biayaService,
                     total_bayar: calculateTotal(),
-                    jumlah_bayar: jumlahBayar,
+                    jumlah_bayar: paid,
                     kembalian: transaksi.kembalian,
-                    metode_pembayaran: metodePembayaran,
+                    metode_pembayaran: isSplitPayment ? 'split' : metodePembayaran,
+                    pembayaran: transaksi.pembayaran // Get from backend response
                 });
 
                 // Show success modal
@@ -334,6 +387,8 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                 setBiayaService(0);
                 setJumlahBayar(0);
                 setKeterangan('');
+                setPayments([]);
+                setIsSplitPayment(false);
             }
         } catch (error: any) {
             toast.error(
@@ -484,12 +539,25 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                     <span>TOTAL</span>
                     <span>${formatRupiah(dataToPrint.total_bayar)}</span>
                 </div>
-                <div class="row">
-                    <span>Bayar</span>
-                    <span>${formatRupiah(dataToPrint.jumlah_bayar)}</span>
-                </div>
+                
+                ${dataToPrint.pembayaran && dataToPrint.pembayaran.length > 0 ?
+                dataToPrint.pembayaran.map(p => `
+                        <div class="row">
+                            <span>Bayar (${p.metode_pembayaran})</span>
+                            <span>${formatRupiah(p.nominal)}</span>
+                        </div>
+                    `).join('')
+                : `
+                    <div class="row">
+                        <span>Bayar (${dataToPrint.metode_pembayaran})</span>
+                        <span>${formatRupiah(dataToPrint.jumlah_bayar)}</span>
+                    </div>
+                    `
+            }
+
                 <div class="row">
                     <span>Kembali</span>
+
                     <span>${formatRupiah(dataToPrint.kembalian)}</span>
                 </div>
                 
@@ -537,7 +605,8 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
             total_bayar: transaction.total_bayar,
             jumlah_bayar: transaction.jumlah_bayar,
             kembalian: transaction.kembalian,
-            metode_pembayaran: transaction.metode_pembayaran
+            metode_pembayaran: transaction.metode_pembayaran,
+            pembayaran: transaction.pembayaran // Populate if available from RecentTransaction
         };
         handlePrint(data);
     };
@@ -961,37 +1030,115 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label>Metode Pembayaran</Label>
-                                    <Select
-                                        value={metodePembayaran}
-                                        onValueChange={setMetodePembayaran}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="tunai">Tunai</SelectItem>
-                                            <SelectItem value="transfer">
-                                                Transfer
-                                            </SelectItem>
-                                            <SelectItem value="qris">QRIS</SelectItem>
-                                            <SelectItem value="edc">EDC</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-base font-semibold">Metode Pembayaran</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor="split-payment" className="text-xs cursor-pointer select-none text-slate-600">Split Payment</Label>
+                                            <input
+                                                id="split-payment"
+                                                type="checkbox"
+                                                checked={isSplitPayment}
+                                                onChange={(e) => setIsSplitPayment(e.target.checked)}
+                                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                            />
+                                        </div>
+                                    </div>
 
-                                <div className="space-y-2">
-                                    <Label>Jumlah Bayar</Label>
-                                    <Input
-                                        type="number"
-                                        value={jumlahBayar}
-                                        onChange={(e) =>
-                                            setJumlahBayar(parseInt(e.target.value) || 0)
-                                        }
-                                        className="text-lg font-medium"
-                                        min={0}
-                                    />
+                                    {!isSplitPayment ? (
+                                        <>
+                                            <Select
+                                                value={metodePembayaran}
+                                                onValueChange={setMetodePembayaran}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="tunai">Tunai</SelectItem>
+                                                    <SelectItem value="transfer">Transfer</SelectItem>
+                                                    <SelectItem value="qris">QRIS</SelectItem>
+                                                    <SelectItem value="edc">EDC</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+
+                                            <div className="space-y-2">
+                                                <Label>Jumlah Bayar</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={jumlahBayar}
+                                                    onChange={(e) =>
+                                                        setJumlahBayar(parseInt(e.target.value) || 0)
+                                                    }
+                                                    className="text-lg font-medium"
+                                                    min={0}
+                                                />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                            <div className="space-y-2">
+                                                <div className="flex gap-2">
+                                                    <div className="flex-1">
+                                                        <Select
+                                                            value={splitMethod}
+                                                            onValueChange={setSplitMethod}
+                                                        >
+                                                            <SelectTrigger className="bg-white">
+                                                                <SelectValue />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="tunai">Tunai</SelectItem>
+                                                                <SelectItem value="transfer">Transfer</SelectItem>
+                                                                <SelectItem value="qris">QRIS</SelectItem>
+                                                                <SelectItem value="edc">EDC</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="Nominal"
+                                                            value={splitAmount}
+                                                            onChange={(e) => setSplitAmount(parseInt(e.target.value) || 0)}
+                                                            className="bg-white"
+                                                            min={0}
+                                                        />
+                                                    </div>
+                                                    <Button onClick={addPayment} size="icon" className="shrink-0">
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <div className="text-xs text-slate-500 text-right">
+                                                    Sisa: {formatRupiah(Math.max(0, calculateTotal() - calculateSplitTotalPaid()))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {payments.map((p) => (
+                                                    <div key={p.id} className="flex justify-between items-center text-sm p-2 bg-white border rounded shadow-sm">
+                                                        <span className="capitalize font-medium">{p.method}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span>{formatRupiah(p.amount)}</span>
+                                                            <button onClick={() => removePayment(p.id)} className="text-red-500 hover:text-red-700">
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {payments.length === 0 && (
+                                                    <div className="text-center text-xs text-slate-400 py-2">
+                                                        Belum ada pembayaran
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex justify-between items-center text-sm font-semibold border-t pt-2">
+                                                <span>Total Dibayar:</span>
+                                                <span>{formatRupiah(calculateSplitTotalPaid())}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Kembalian Display - Always Visible */}
@@ -1041,7 +1188,7 @@ export default function PosIndex({ cabang_id, cabang_nama, cabang_alamat, cabang
                                     onClick={handleCheckout}
                                     disabled={
                                         cart.length === 0 ||
-                                        jumlahBayar < calculateTotal() ||
+                                        (isSplitPayment ? calculateSplitTotalPaid() : jumlahBayar) < calculateTotal() ||
                                         isProcessing
                                     }
                                     className="w-full h-14 text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all"

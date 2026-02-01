@@ -34,7 +34,7 @@ class PosController extends Controller
         // Get recent transactions for today
         $recentTransactions = Transaksi::where('cabang_id', $user->cabang_id)
             ->whereDate('created_at', Carbon::today())
-            ->with(['detailTransaksi', 'kasir:id,name'])
+            ->with(['detailTransaksi', 'kasir:id,name', 'pembayaran'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -107,7 +107,7 @@ class PosController extends Controller
             $query->whereDate('created_at', $date);
         }
 
-        $transaksi = $query->with(['detailTransaksi', 'kasir:id,name'])
+        $transaksi = $query->with(['detailTransaksi', 'kasir:id,name', 'pembayaran'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -144,14 +144,20 @@ class PosController extends Controller
     /**
      * Store new transaction
      */
+    /**
+     * Store new transaction
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'jenis_transaksi' => 'required|in:retail,konter,service,faktur',
             'nama_pelanggan' => 'nullable|string|max:100',
             'telepon_pelanggan' => 'nullable|string|max:20',
-            'metode_pembayaran' => 'required|in:tunai,transfer,qris,edc',
-            'jumlah_bayar' => 'required|integer|min:0',
+            'metode_pembayaran' => 'required_without:pembayaran|in:tunai,transfer,qris,edc,split',
+            'jumlah_bayar' => 'required_without:pembayaran|integer|min:0',
+            'pembayaran' => 'nullable|array|min:1',
+            'pembayaran.*.metode_pembayaran' => 'required|in:tunai,transfer,qris,edc',
+            'pembayaran.*.nominal' => 'required|integer|min:1',
             'detail' => 'required|array|min:1',
             'detail.*.barang_id' => 'required|exists:barang,id',
             'detail.*.jumlah' => 'required|integer|min:1',
@@ -186,7 +192,46 @@ class PosController extends Controller
             $diskon = $request->diskon ?? 0;
             $biayaService = $request->biaya_service ?? 0;
             $totalBayar = $subtotal - $diskon + $biayaService;
-            $kembalian = $request->jumlah_bayar - $totalBayar;
+
+            // Determine payment details
+            $pembayaranList = [];
+            if ($request->has('pembayaran') && is_array($request->pembayaran)) {
+                $jumlahBayar = 0;
+                foreach ($request->pembayaran as $p) {
+                    $jumlahBayar += $p['nominal'];
+                    $pembayaranList[] = [
+                        'metode_pembayaran' => $p['metode_pembayaran'],
+                        'nominal' => $p['nominal'],
+                        'keterangan' => $p['keterangan'] ?? null,
+                    ];
+                }
+                
+                // If multiple payments, marked as split. If single, use that method.
+                if (count($pembayaranList) > 1) {
+                    $metodePembayaran = 'split';
+                } else {
+                    $metodePembayaran = $pembayaranList[0]['metode_pembayaran'];
+                }
+            } else {
+                // Legacy/Single payment mode
+                $jumlahBayar = $request->jumlah_bayar;
+                $metodePembayaran = $request->metode_pembayaran;
+                $pembayaranList[] = [
+                    'metode_pembayaran' => $metodePembayaran,
+                    'nominal' => $jumlahBayar,
+                    'keterangan' => null,
+                ];
+            }
+
+            $kembalian = $jumlahBayar - $totalBayar;
+
+            if ($kembalian < 0) {
+                 DB::rollBack();
+                 return response()->json([
+                    'success' => false,
+                    'message' => 'Jumlah bayar kurang dari total tagihan',
+                ], 422);
+            }
 
             // Create transaksi
             $transaksi = Transaksi::create([
@@ -200,14 +245,24 @@ class PosController extends Controller
                 'diskon' => $diskon,
                 'biaya_service' => $biayaService,
                 'total_bayar' => $totalBayar,
-                'metode_pembayaran' => $request->metode_pembayaran,
-                'jumlah_bayar' => $request->jumlah_bayar,
+                'metode_pembayaran' => $metodePembayaran,
+                'jumlah_bayar' => $jumlahBayar,
                 'kembalian' => $kembalian,
                 'total_laba' => $totalLaba,
                 'keterangan' => $request->keterangan,
                 'status_transaksi' => 'selesai',
                 'kasir_id' => Auth::id(),
             ]);
+
+            // Save Payment Details
+            foreach ($pembayaranList as $p) {
+                \App\Models\TransaksiPembayaran::create([
+                    'transaksi_id' => $transaksi->id,
+                    'metode_pembayaran' => $p['metode_pembayaran'],
+                    'nominal' => $p['nominal'],
+                    'keterangan' => $p['keterangan'],
+                ]);
+            }
 
             // Create detail and update stok
             foreach ($request->detail as $item) {
@@ -247,8 +302,10 @@ class PosController extends Controller
                     'tanggal_transaksi' => $transaksi->tanggal_transaksi,
                     'kasir' => Auth::user()->name,
                     'total_bayar' => $totalBayar,
-                    'jumlah_bayar' => $request->jumlah_bayar,
+                    'jumlah_bayar' => $jumlahBayar,
                     'kembalian' => $kembalian,
+                    // Return payment details if needed by frontend
+                    'pembayaran' => $pembayaranList,
                 ],
             ]);
         } catch (\Exception $e) {
