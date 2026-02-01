@@ -208,11 +208,29 @@ class LaporanCabangController extends Controller
         });
 
         // Calculate totals per payment method (Combined Sales + Service)
+        // 1. Get Transaction Payments from transaksi_pembayaran table
+        $trxPayments = DB::table('transaksi_pembayaran')
+            ->join('transaksi', 'transaksi_pembayaran.transaksi_id', '=', 'transaksi.id')
+            ->where('transaksi.cabang_id', $cabangId)
+            ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
+            ->select('transaksi_pembayaran.metode_pembayaran', DB::raw('SUM(transaksi_pembayaran.nominal) as total'))
+            ->groupBy('transaksi_pembayaran.metode_pembayaran')
+            ->pluck('total', 'metode_pembayaran');
+
+        // 2. Get Service Payments (Still using single method for service for now, or update if service also supports split later)
+        // Assuming service still uses single column 'metode_pembayaran'
+        $servicePayments = [
+            'tunai' => $servicesRaw->where('metode_pembayaran', 'tunai')->sum('total_biaya'),
+            'transfer' => $servicesRaw->where('metode_pembayaran', 'transfer')->sum('total_biaya'),
+            'qris' => $servicesRaw->where('metode_pembayaran', 'qris')->sum('total_biaya'),
+            'edc' => $servicesRaw->where('metode_pembayaran', 'edc')->sum('total_biaya'),
+        ];
+
         $perMetode = [
-            'tunai' => $transaksiRaw->where('metode_pembayaran', 'tunai')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'tunai')->sum('total_biaya'),
-            'transfer' => $transaksiRaw->where('metode_pembayaran', 'transfer')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'transfer')->sum('total_biaya'),
-            'qris' => $transaksiRaw->where('metode_pembayaran', 'qris')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'qris')->sum('total_biaya'),
-            'edc' => $transaksiRaw->where('metode_pembayaran', 'edc')->sum('total_bayar') + $servicesRaw->where('metode_pembayaran', 'edc')->sum('total_biaya'),
+            'tunai' => ($trxPayments['tunai'] ?? 0) + $servicePayments['tunai'],
+            'transfer' => ($trxPayments['transfer'] ?? 0) + $servicePayments['transfer'],
+            'qris' => ($trxPayments['qris'] ?? 0) + $servicePayments['qris'],
+            'edc' => ($trxPayments['edc'] ?? 0) + $servicePayments['edc'],
         ];
 
         // Total calculations

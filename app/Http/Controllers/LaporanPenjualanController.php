@@ -129,10 +129,16 @@ class LaporanPenjualanController extends Controller
             ->limit(10)
             ->get();
 
-        $perMetodePembayaran = Transaksi::where('cabang_id', $cabangId)
-            ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
-            ->select('metode_pembayaran', DB::raw('COUNT(*) as jumlah'), DB::raw('SUM(total_bayar) as total'))
-            ->groupBy('metode_pembayaran')
+        $perMetodePembayaran = DB::table('transaksi_pembayaran')
+            ->join('transaksi', 'transaksi_pembayaran.transaksi_id', '=', 'transaksi.id')
+            ->where('transaksi.cabang_id', $cabangId)
+            ->whereBetween('transaksi.tanggal_transaksi', [$startDate, $endDate])
+            ->select(
+                'transaksi_pembayaran.metode_pembayaran',
+                DB::raw('COUNT(DISTINCT transaksi.id) as jumlah_transaksi'), // Count affected transactions
+                DB::raw('SUM(transaksi_pembayaran.nominal) as total') // Sum actual payments
+            )
+            ->groupBy('transaksi_pembayaran.metode_pembayaran')
             ->get();
 
         return Inertia::render('laporan/penjualan/index', [
