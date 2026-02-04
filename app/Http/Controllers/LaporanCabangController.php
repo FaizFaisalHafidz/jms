@@ -226,8 +226,11 @@ class LaporanCabangController extends Controller
             'edc' => $servicesRaw->where('metode_pembayaran', 'edc')->sum('total_biaya'),
         ];
 
+        // Total Kembalian (untuk adjustment uang tunai)
+        $totalKembalian = $transaksiRaw->sum('kembalian');
+
         $perMetode = [
-            'tunai' => ($trxPayments['tunai'] ?? 0) + $servicePayments['tunai'],
+            'tunai' => (int)(($trxPayments['tunai'] ?? 0) + $servicePayments['tunai'] - $totalKembalian),
             'transfer' => ($trxPayments['transfer'] ?? 0) + $servicePayments['transfer'],
             'qris' => ($trxPayments['qris'] ?? 0) + $servicePayments['qris'],
             'edc' => ($trxPayments['edc'] ?? 0) + $servicePayments['edc'],

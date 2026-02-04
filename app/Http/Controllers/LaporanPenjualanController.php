@@ -141,6 +141,19 @@ class LaporanPenjualanController extends Controller
             ->groupBy('transaksi_pembayaran.metode_pembayaran')
             ->get();
 
+        // Calculate total kembalian for the period to adjust Cash
+        $totalKembalian = Transaksi::where('cabang_id', $cabangId)
+            ->whereBetween('tanggal_transaksi', [$startDate, $endDate])
+            ->sum('kembalian');
+
+        // Adjust 'tunai' total
+        $perMetodePembayaran = $perMetodePembayaran->map(function ($item) use ($totalKembalian) {
+            if ($item->metode_pembayaran === 'tunai') {
+                $item->total = (int)($item->total - $totalKembalian);
+            }
+            return $item;
+        });
+
         return Inertia::render('laporan/penjualan/index', [
             'mode' => 'detail',
             'cabang_list' => $cabangList,
