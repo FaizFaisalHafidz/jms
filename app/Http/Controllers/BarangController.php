@@ -39,6 +39,11 @@ class BarangController extends Controller
                     }
                     $query->select('id', 'barang_id', 'cabang_id', 'jumlah_stok')
                           ->with('cabang:id,nama_cabang');
+                },
+                'hargaCabang' => function ($query) use ($user) {
+                    if ($user->cabang_id) {
+                        $query->where('cabang_id', $user->cabang_id);
+                    }
                 }
             ]);
         
@@ -62,6 +67,22 @@ class BarangController extends Controller
         
         // Pagination
         $barang = $query->orderBy('nama_barang')->paginate(15);
+        
+        // Transform data to use harga per cabang untuk semua user yang punya cabang_id
+        if ($user->cabang_id) {
+            $cabangId = $user->cabang_id;
+            $barang->getCollection()->transform(function ($item) use ($cabangId) {
+                // Check if hargaCabang is loaded
+                if ($item->relationLoaded('hargaCabang') && $item->hargaCabang->isNotEmpty()) {
+                    $hargaCustom = $item->hargaCabang->first();
+                    $item->harga_asal = $hargaCustom->harga_asal ?? $item->harga_asal;
+                    $item->harga_konsumen = $hargaCustom->harga_konsumen ?? $item->harga_konsumen;
+                    $item->harga_konter = $hargaCustom->harga_konter ?? $item->harga_konter;
+                    $item->harga_partai = $hargaCustom->harga_partai ?? $item->harga_partai;
+                }
+                return $item;
+            });
+        }
         
         // Get kategori and suplier for form - cache selectively
         $kategori = KategoriBarang::select('id', 'nama_kategori')
@@ -100,6 +121,7 @@ class BarangController extends Controller
             'is_super_admin' => $isSuperAdmin,
             'can_manage_stock' => $canManageStock,
             'filters' => $request->only(['search', 'kategori_id', 'status']),
+            'timestamp' => now()->timestamp, // Force fresh data
             'stats' => [
                 'total' => (int)$stats->total,
                 'aktif' => (int)$stats->aktif,
@@ -356,6 +378,11 @@ class BarangController extends Controller
                     }
                     $query->select('id', 'barang_id', 'cabang_id', 'jumlah_stok')
                           ->with('cabang:id,nama_cabang');
+                },
+                'hargaCabang' => function ($query) use ($user) {
+                    if ($user->cabang_id) {
+                        $query->where('cabang_id', $user->cabang_id);
+                    }
                 }
             ]);
         
@@ -379,6 +406,22 @@ class BarangController extends Controller
         
         // Pagination
         $barang = $query->orderBy('nama_barang')->paginate(15);
+        
+        // Transform data to use harga per cabang untuk semua user yang punya cabang_id
+        if ($user->cabang_id) {
+            $cabangId = $user->cabang_id;
+            $barang->getCollection()->transform(function ($item) use ($cabangId) {
+                // Check if hargaCabang is loaded
+                if ($item->relationLoaded('hargaCabang') && $item->hargaCabang->isNotEmpty()) {
+                    $hargaCustom = $item->hargaCabang->first();
+                    $item->harga_asal = $hargaCustom->harga_asal ?? $item->harga_asal;
+                    $item->harga_konsumen = $hargaCustom->harga_konsumen ?? $item->harga_konsumen;
+                    $item->harga_konter = $hargaCustom->harga_konter ?? $item->harga_konter;
+                    $item->harga_partai = $hargaCustom->harga_partai ?? $item->harga_partai;
+                }
+                return $item;
+            });
+        }
         
         return response()->json([
             'success' => true,

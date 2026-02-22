@@ -67,17 +67,17 @@ class PosController extends Controller
             })
             ->limit(10)
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($cabangId) {
                 $stok = $item->stokCabang->first();
                 return [
                     'id' => $item->id,
                     'kode_barang' => $item->kode_barang,
                     'nama_barang' => $item->nama_barang,
                     'barcode' => $item->barcode,
-                    'harga_asal' => $item->harga_asal,
-                    'harga_konsumen' => $item->harga_konsumen,
-                    'harga_konter' => $item->harga_konter,
-                    'harga_partai' => $item->harga_partai,
+                    'harga_asal' => $item->getHargaForCabang($cabangId, 'harga_asal'),
+                    'harga_konsumen' => $item->getHargaForCabang($cabangId, 'harga_konsumen'),
+                    'harga_konter' => $item->getHargaForCabang($cabangId, 'harga_konter'),
+                    'harga_partai' => $item->getHargaForCabang($cabangId, 'harga_partai'),
                     'satuan' => $item->satuan,
                     'stok' => $stok ? $stok->jumlah_stok : 0,
                 ];

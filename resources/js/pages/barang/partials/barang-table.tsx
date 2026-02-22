@@ -111,6 +111,16 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
     const [barangData, setBarangData] = useState<Barang[]>(initialBarang);
     const [paginationData, setPaginationData] = useState(initialPagination);
 
+    // Sync state dengan props ketika props berubah
+    useEffect(() => {
+        console.log('Barang data received:', initialBarang.map(b => ({
+            kode: b.kode_barang,
+            konter: b.harga_konter
+        })));
+        setBarangData(initialBarang);
+        setPaginationData(initialPagination);
+    }, [initialBarang, initialPagination]);
+
 
     const handleDelete = (barang: Barang) => {
         if (
@@ -129,7 +139,7 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
                 jumlah_stok: jumlahStok,
             });
             toast.success('Stok berhasil diperbarui');
-            router.reload({ only: ['barang'] });
+            router.reload({ only: ['barang', 'timestamp'] });
             setEditingStok(null);
         } catch (error: any) {
             toast.error(

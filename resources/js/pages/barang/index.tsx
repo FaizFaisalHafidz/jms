@@ -75,6 +75,7 @@ interface Props {
     stats: BarangStats;
     is_super_admin: boolean;
     can_manage_stock: boolean;
+    timestamp?: number;
     filters?: {
         search?: string;
         kategori_id?: string;
@@ -93,6 +94,7 @@ export default function BarangIndex({
     stats,
     is_super_admin,
     can_manage_stock,
+    timestamp,
     filters,
     flash,
 }: Props) {
@@ -164,6 +166,7 @@ export default function BarangIndex({
                 <BarangStats stats={stats} />
 
                 <BarangTable
+                    key={timestamp || Date.now()}
                     barang={barang.data}
                     kategori={kategori}
                     onEdit={handleEdit}
