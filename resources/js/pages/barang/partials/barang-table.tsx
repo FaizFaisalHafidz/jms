@@ -113,14 +113,9 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
 
     // Sync state dengan props ketika props berubah
     useEffect(() => {
-        console.log('Barang data received:', initialBarang.map(b => ({
-            kode: b.kode_barang,
-            konter: b.harga_konter
-        })));
         setBarangData(initialBarang);
         setPaginationData(initialPagination);
     }, [initialBarang, initialPagination]);
-
 
     const handleDelete = (barang: Barang) => {
         if (
@@ -177,6 +172,11 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
         // Skip pada render pertama
         if (isFirstRender.current) {
             isFirstRender.current = false;
+            return;
+        }
+
+        // Skip jika tidak ada perubahan filter (initial state)
+        if (!searchInput && !kategoriFilter && !statusFilter) {
             return;
         }
 
