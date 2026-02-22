@@ -4,6 +4,7 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RedirectIfOwner;
 use App\Http\Middleware\RedirectIfNotOwner;
+use App\Http\Middleware\CheckStockManagementPermission;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'redirect.owner' => RedirectIfOwner::class,
             'redirect.not.owner' => RedirectIfNotOwner::class,
+            'check.stock.permission' => CheckStockManagementPermission::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

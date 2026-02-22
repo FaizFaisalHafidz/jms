@@ -29,6 +29,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Cabang Routes
     Route::resource('cabang', \App\Http\Controllers\CabangController::class)->except(['show', 'create', 'edit']);
     
+    // Super Admin & Supervisor - Management Routes
+    Route::middleware(['role:super_admin|supervisor'])->prefix('super-admin')->name('super-admin.')->group(function () {
+        Route::get('stock-permission', [\App\Http\Controllers\CabangStockPermissionController::class, 'index'])->name('stock-permission.index');
+        Route::put('stock-permission/{cabang}', [\App\Http\Controllers\CabangStockPermissionController::class, 'update'])->name('stock-permission.update');
+        Route::post('stock-permission/batch', [\App\Http\Controllers\CabangStockPermissionController::class, 'batchUpdate'])->name('stock-permission.batch');
+        
+        // Harga Per Cabang Management
+        Route::get('harga-cabang', [\App\Http\Controllers\HargaCabangController::class, 'index'])->name('harga-cabang.index');
+        Route::post('harga-cabang/search-barang', [\App\Http\Controllers\HargaCabangController::class, 'searchBarang'])->name('harga-cabang.search-barang');
+        Route::post('harga-cabang/update', [\App\Http\Controllers\HargaCabangController::class, 'update'])->name('harga-cabang.update');
+        Route::post('harga-cabang/batch', [\App\Http\Controllers\HargaCabangController::class, 'batchUpdate'])->name('harga-cabang.batch');
+        Route::post('harga-cabang/reset', [\App\Http\Controllers\HargaCabangController::class, 'reset'])->name('harga-cabang.reset');
+    });
+    
     // User Routes
     Route::resource('users', \App\Http\Controllers\UserController::class)->except(['show', 'create', 'edit']);
     

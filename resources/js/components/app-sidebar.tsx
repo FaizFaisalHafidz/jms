@@ -18,8 +18,10 @@ import {
     Box,
     Building2,
     ClipboardList,
+    DollarSign,
     FileText,
     LayoutGrid,
+    Lock,
     Package,
     PackageSearch,
     Settings,
@@ -52,6 +54,16 @@ export function AppSidebar() {
             title: 'Cabang',
             href: '/cabang',
             icon: Building2,
+        },
+        {
+            title: 'Permission Stok',
+            href: '/super-admin/stock-permission',
+            icon: Lock,
+        },
+        {
+            title: 'Harga Per Cabang',
+            href: '/super-admin/harga-cabang',
+            icon: DollarSign,
         },
         {
             title: 'Pengguna',
@@ -203,11 +215,32 @@ export function AppSidebar() {
         },
     ];
 
+    // Menu untuk Supervisor
+    const supervisorMenu: NavItem[] = [
+        {
+            title: 'Permission Stok',
+            href: '/super-admin/stock-permission',
+            icon: Lock,
+        },
+        {
+            title: 'Harga Per Cabang',
+            href: '/super-admin/harga-cabang',
+            icon: DollarSign,
+        },
+        {
+            title: 'Kategori Barang',
+            href: '/kategori-barang',
+            icon: Box,
+        },
+    ];
+
     // Menentukan menu yang akan ditampilkan berdasarkan role
     let mainNavItems = [...dashboardMenu];
 
     if (roles.includes('super_admin')) {
         mainNavItems = [...mainNavItems, ...superAdminMenu];
+    } else if (roles.includes('supervisor')) {
+        mainNavItems = [...mainNavItems, ...supervisorMenu];
     } else if (roles.includes('owner')) {
         mainNavItems = [...mainNavItems, ...ownerMenu];
     } else if (roles.includes('admin_cabang')) {

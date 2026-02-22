@@ -1,8 +1,9 @@
 import { Heading } from '@/components/heading';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
-import { Package, Plus, Printer } from 'lucide-react';
+import { Package, Plus, Printer, Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BarangFormModal } from './partials/barang-form-modal';
@@ -72,6 +73,8 @@ interface Props {
     kategori: KategoriBarang[];
     suplier: Suplier[];
     stats: BarangStats;
+    is_super_admin: boolean;
+    can_manage_stock: boolean;
     filters?: {
         search?: string;
         kategori_id?: string;
@@ -88,6 +91,8 @@ export default function BarangIndex({
     kategori,
     suplier,
     stats,
+    is_super_admin,
+    can_manage_stock,
     filters,
     flash,
 }: Props) {
@@ -145,12 +150,24 @@ export default function BarangIndex({
                     </div>
                 </div>
 
+                {!can_manage_stock && !is_super_admin && (
+                    <Alert variant="destructive" className="border-red-300 bg-red-50">
+                        <Lock className="h-4 w-4" />
+                        <AlertTitle>Akses Terbatas</AlertTitle>
+                        <AlertDescription>
+                            Cabang Anda tidak memiliki izin untuk mengelola stok barang. Anda hanya dapat melihat data stok.
+                            Hubungi Super Admin untuk mengaktifkan permission.
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <BarangStats stats={stats} />
 
                 <BarangTable
                     barang={barang.data}
                     kategori={kategori}
                     onEdit={handleEdit}
+                    can_manage_stock={can_manage_stock}
                     pagination={barang.meta}
                     filters={filters}
                 />

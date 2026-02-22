@@ -54,6 +54,11 @@ class Barang extends Model
         return $this->hasMany(StokCabang::class);
     }
 
+    public function hargaCabang(): HasMany
+    {
+        return $this->hasMany(HargaCabang::class);
+    }
+
     public function detailTransaksi(): HasMany
     {
         return $this->hasMany(DetailTransaksi::class);
@@ -62,5 +67,22 @@ class Barang extends Model
     public function detailPembelian(): HasMany
     {
         return $this->hasMany(DetailPembelian::class);
+    }
+
+    /**
+     * Get harga untuk cabang tertentu
+     * Jika ada harga custom, pakai itu. Kalau tidak, pakai harga default
+     */
+    public function getHargaForCabang($cabangId, $tipeHarga = 'harga_konsumen')
+    {
+        $hargaCustom = $this->hargaCabang()
+            ->where('cabang_id', $cabangId)
+            ->first();
+
+        if ($hargaCustom && $hargaCustom->$tipeHarga !== null) {
+            return $hargaCustom->$tipeHarga;
+        }
+
+        return $this->$tipeHarga;
     }
 }

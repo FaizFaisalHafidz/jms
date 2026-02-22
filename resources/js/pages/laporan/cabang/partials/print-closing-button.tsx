@@ -212,9 +212,9 @@ export function PrintClosingButton({ filters }: PrintClosingButtonProps) {
                         <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                     </div>
                     <div class="center" style="font-size: 11px; margin-bottom: 2px; letter-spacing: 0.2px;">JAYA MAKMUR SPAREPART</div>
-                    <div class="center" style="font-size: 8px;">Cbg ${data.cabang.nama}</div>
-                    ${data.cabang.alamat !== '-' ? `<div class="center" style="font-size: 8px;">${data.cabang.alamat}</div>` : ''}
-                    ${data.cabang.telepon !== '-' ? `<div class="center" style="font-size: 8px; margin-bottom: 2px;">Telp: ${data.cabang.telepon}</div>` : ''}
+                    <div class="center" style="font-size: 10px; font-weight: bold; margin-top: 1px;">Cbg ${data.cabang.nama}</div>
+                    ${data.cabang.alamat !== '-' ? `<div class="center" style="font-size: 9px; font-weight: bold;">${data.cabang.alamat}</div>` : ''}
+                    ${data.cabang.telepon !== '-' ? `<div class="center" style="font-size: 9px; font-weight: bold; margin-bottom: 2px;">Telp: ${data.cabang.telepon}</div>` : ''}
                     <div class="line"></div>
                     <div class="center" style="font-size: 9px; margin-bottom: 2px;">${title}</div>
                     <div class="line"></div>

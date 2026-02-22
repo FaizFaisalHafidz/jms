@@ -369,7 +369,8 @@ export function BarangFormModal({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4">
+                    {/* Input harga di-hide karena sekarang menggunakan fitur Harga Per Cabang */}
+                    {/* <div className="grid grid-cols-4 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="harga_asal">
                                 Harga Modal <span className="text-red-600">*</span>
@@ -465,7 +466,7 @@ export function BarangFormModal({
                                 </p>
                             )}
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="space-y-2">
                         <Label htmlFor="stok_minimal">

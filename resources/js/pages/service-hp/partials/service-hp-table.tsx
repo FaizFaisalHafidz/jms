@@ -154,9 +154,9 @@ export default function ServiceHpTable({ services }: Props) {
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
                 <div class="center" style="font-size: 11px; margin-bottom: 2px; letter-spacing: 0.2px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center" style="font-size: 8px;">Cbg ${selectedService.cabang_nama}</div>
-                ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 8px;">${selectedService.cabang_alamat}</div>` : ''}
-                ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 8px; margin-bottom: 2px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
+                <div class="center" style="font-size: 10px; font-weight: bold; margin-top: 1px;">Cbg ${selectedService.cabang_nama}</div>
+                ${selectedService.cabang_alamat ? `<div class="center" style="font-size: 9px; font-weight: bold;">${selectedService.cabang_alamat}</div>` : ''}
+                ${selectedService.cabang_telepon ? `<div class="center" style="font-size: 9px; font-weight: bold; margin-bottom: 2px;">Telp: ${selectedService.cabang_telepon}</div>` : ''}
                 <div class="line"></div>
                 <div class="center" style="font-size: 9px; margin-bottom: 2px;">NOTA SERVICE HP</div>
                 <div class="line"></div>

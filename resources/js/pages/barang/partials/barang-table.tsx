@@ -83,6 +83,7 @@ interface BarangTableProps {
     barang: Barang[];
     kategori: KategoriBarang[];
     onEdit: (barang: Barang) => void;
+    can_manage_stock?: boolean;
     pagination?: {
         current_page: number;
         from: number | null;
@@ -98,7 +99,7 @@ interface BarangTableProps {
     };
 }
 
-export function BarangTable({ barang: initialBarang, kategori, onEdit, pagination: initialPagination, filters }: BarangTableProps) {
+export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manage_stock = true, pagination: initialPagination, filters }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
     const [stokValue, setStokValue] = useState<number>(0);
@@ -316,12 +317,14 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, paginatio
                                     className="w-20 h-8 text-sm"
                                     min={0}
                                     autoFocus
+                                    disabled={!can_manage_stock}
                                 />
                                 <Button
                                     size="sm"
                                     variant="ghost"
                                     className="h-8 px-2 text-green-600 hover:text-green-700"
                                     onClick={() => handleSaveStok(barang.id)}
+                                    disabled={!can_manage_stock}
                                 >
                                     ✓
                                 </Button>
@@ -337,9 +340,15 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, paginatio
                         ) : (
                             <button
                                 onClick={() =>
-                                    handleEditStok(barang.id, currentStok)
+                                    can_manage_stock && handleEditStok(barang.id, currentStok)
                                 }
-                                className="text-sm font-medium hover:underline px-2 py-1 rounded hover:bg-gray-100"
+                                className={`text-sm font-medium px-2 py-1 rounded ${
+                                    can_manage_stock 
+                                        ? 'hover:underline hover:bg-gray-100 cursor-pointer' 
+                                        : 'cursor-not-allowed opacity-60'
+                                }`}
+                                disabled={!can_manage_stock}
+                                title={!can_manage_stock ? 'Cabang Anda tidak memiliki izin untuk mengelola stok' : ''}
                             >
                                 {currentStok}
                             </button>

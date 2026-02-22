@@ -112,9 +112,9 @@ export default function ReturPenjualanIndex({ returs, stats }: Props) {
                     <img src="https://tugasbro.sgp1.cdn.digitaloceanspaces.com/jms/logo-jms.png" alt="Logo" class="logo" />
                 </div>
                 <div class="center bold" style="font-size: 8px; margin-bottom: 1px;">JAYA MAKMUR SPAREPART</div>
-                <div class="center" style="font-size: 6px;">Cbg ${transaksiCetak.cabang?.nama_cabang || '-'}</div>
-                <div class="center" style="font-size: 6px;">${transaksiCetak.cabang?.alamat || '-'}</div>
-                <div class="center" style="font-size: 6px; margin-bottom: 2px;">Telp: ${transaksiCetak.cabang?.telepon || '-'}</div>
+                <div class="center" style="font-size: 7px; font-weight: bold;">Cbg ${transaksiCetak.cabang?.nama_cabang || '-'}</div>
+                <div class="center" style="font-size: 7px; font-weight: bold;">${transaksiCetak.cabang?.alamat || '-'}</div>
+                <div class="center" style="font-size: 7px; font-weight: bold; margin-bottom: 2px;">Telp: ${transaksiCetak.cabang?.telepon || '-'}</div>
                 <div class="line"></div>
                 <div class="center" style="font-size: 6px; margin-bottom: 2px;">STRUK PENJUALAN (RETUR)</div>
                 <div class="line"></div>

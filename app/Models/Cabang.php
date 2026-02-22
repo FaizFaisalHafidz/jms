@@ -18,10 +18,12 @@ class Cabang extends Model
         'provinsi',
         'kode_pos',
         'status_aktif',
+        'can_manage_stock',
     ];
 
     protected $casts = [
         'status_aktif' => 'boolean',
+        'can_manage_stock' => 'boolean',
     ];
 
     // Relationships
@@ -33,6 +35,11 @@ class Cabang extends Model
     public function stokCabang(): HasMany
     {
         return $this->hasMany(StokCabang::class);
+    }
+
+    public function hargaCabang(): HasMany
+    {
+        return $this->hasMany(HargaCabang::class);
     }
 
     public function transaksi(): HasMany

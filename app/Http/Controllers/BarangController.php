@@ -89,12 +89,16 @@ class BarangController extends Controller
             SUM(CASE WHEN status_aktif = 0 THEN 1 ELSE 0 END) as nonaktif
         ')->first();
 
+        // Check if user's cabang can manage stock
+        $canManageStock = $isSuperAdmin || ($user->cabang && $user->cabang->can_manage_stock);
+
         return Inertia::render('barang/index', [
             'barang' => $barang,
             'kategori' => $kategori,
             'suplier' => $suplier,
             'cabang' => $cabang,
             'is_super_admin' => $isSuperAdmin,
+            'can_manage_stock' => $canManageStock,
             'filters' => $request->only(['search', 'kategori_id', 'status']),
             'stats' => [
                 'total' => (int)$stats->total,
@@ -285,6 +289,17 @@ class BarangController extends Controller
      */
     public function updateStok(Request $request)
     {
+        $user = Auth::user();
+        $isSuperAdmin = $user->hasRole('super_admin');
+        
+        // Check permission
+        if (!$isSuperAdmin && (!$user->cabang || !$user->cabang->can_manage_stock)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cabang Anda tidak memiliki izin untuk mengelola stok. Hubungi super admin.',
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'barang_id' => 'required|exists:barang,id',
             'jumlah_stok' => 'required|integer|min:0',
