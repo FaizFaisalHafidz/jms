@@ -2,7 +2,7 @@ import { Heading } from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Package, Plus, Printer, Lock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -10,6 +10,8 @@ import { BarangFormModal } from './partials/barang-form-modal';
 import { BarangStats } from './partials/barang-stats';
 import { BarangTable } from './partials/barang-table';
 import { BarcodePrintModal } from './partials/barcode-print-modal';
+import { HargaCabangModal } from './partials/harga-cabang-modal';
+import { StokCabangModal } from './partials/stok-cabang-modal';
 
 interface KategoriBarang {
     id: number;
@@ -41,6 +43,19 @@ interface Barang {
     status_aktif: boolean;
     kategori: KategoriBarang;
     suplier: Suplier;
+    stok_cabang: StokCabang[];
+}
+
+interface StokCabang {
+    id: number;
+    barang_id: number;
+    cabang_id: number;
+    jumlah_stok: number;
+}
+
+interface Cabang {
+    id: number;
+    nama_cabang: string;
 }
 
 interface BarangStats {
@@ -72,6 +87,7 @@ interface Props {
     barang: PaginatedBarang;
     kategori: KategoriBarang[];
     suplier: Suplier[];
+    cabang: Cabang[];
     stats: BarangStats;
     is_super_admin: boolean;
     can_manage_stock: boolean;
@@ -91,6 +107,7 @@ export default function BarangIndex({
     barang,
     kategori,
     suplier,
+    cabang,
     stats,
     is_super_admin,
     can_manage_stock,
@@ -101,6 +118,17 @@ export default function BarangIndex({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [selectedBarang, setSelectedBarang] = useState<Barang | null>(null);
+    const [isHargaModalOpen, setIsHargaModalOpen] = useState(false);
+    const [selectedBarangHarga, setSelectedBarangHarga] = useState<Barang | null>(null);
+
+    const [isStokModalOpen, setIsStokModalOpen] = useState(false);
+    const [selectedBarangStok, setSelectedBarangStok] = useState<Barang | null>(null);
+
+    const { auth } = usePage<any>().props;
+    const roles: string[] = auth?.roles || [];
+    const isSupervisor = roles.includes('supervisor');
+    const isSuperAdmin = roles.includes('super_admin');
+    const canManageHargaCabang = isSuperAdmin || isSupervisor;
 
     useEffect(() => {
         if (flash?.success) {
@@ -124,6 +152,16 @@ export default function BarangIndex({
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setSelectedBarang(null);
+    };
+
+    const handleEditHargaCabang = (barang: Barang) => {
+        setSelectedBarangHarga(barang);
+        setIsHargaModalOpen(true);
+    };
+
+    const handleEditStokCabang = (barang: Barang) => {
+        setSelectedBarangStok(barang);
+        setIsStokModalOpen(true);
     };
 
     return (
@@ -152,7 +190,7 @@ export default function BarangIndex({
                     </div>
                 </div>
 
-                {!can_manage_stock && !is_super_admin && (
+                {!can_manage_stock && !is_super_admin && !isSupervisor && (
                     <Alert variant="destructive" className="border-red-300 bg-red-50">
                         <Lock className="h-4 w-4" />
                         <AlertTitle>Akses Terbatas</AlertTitle>
@@ -170,7 +208,10 @@ export default function BarangIndex({
                     barang={barang.data}
                     kategori={kategori}
                     onEdit={handleEdit}
+                    onEditHargaCabang={canManageHargaCabang ? handleEditHargaCabang : undefined}
+                    onEditStokCabang={canManageHargaCabang ? handleEditStokCabang : undefined}
                     can_manage_stock={can_manage_stock}
+                    hideStokColumn={isSupervisor && !isSuperAdmin}
                     pagination={barang.meta}
                     filters={filters}
                 />
@@ -187,6 +228,26 @@ export default function BarangIndex({
                     isOpen={isPrintModalOpen}
                     onClose={() => setIsPrintModalOpen(false)}
                     barang={barang.data}
+                />
+
+                <HargaCabangModal
+                    isOpen={isHargaModalOpen}
+                    onClose={() => {
+                        setIsHargaModalOpen(false);
+                        setSelectedBarangHarga(null);
+                    }}
+                    barang={selectedBarangHarga}
+                    cabangs={cabang || []}
+                />
+
+                <StokCabangModal
+                    isOpen={isStokModalOpen}
+                    onClose={() => {
+                        setIsStokModalOpen(false);
+                        setSelectedBarangStok(null);
+                    }}
+                    barang={selectedBarangStok}
+                    cabangs={cabang || []}
                 />
             </div>
         </AppLayout>

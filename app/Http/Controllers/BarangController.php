@@ -21,6 +21,7 @@ class BarangController extends Controller
     {
         $user = Auth::user();
         $isSuperAdmin = $user->hasRole('super_admin');
+        $isSupervisor = $user->hasRole('supervisor');
         
         // Build query dengan pagination dan filtering
         $query = Barang::query()
@@ -95,8 +96,8 @@ class BarangController extends Controller
             ->orderBy('nama_suplier')
             ->get();
         
-        // Get all cabang untuk super admin
-        $cabang = $isSuperAdmin 
+        // Get all cabang untuk super admin dan supervisor (untuk modal harga cabang)
+        $cabang = ($isSuperAdmin || $isSupervisor) 
             ? Cabang::select('id', 'nama_cabang')
                 ->where('status_aktif', true)
                 ->orderBy('nama_cabang')
@@ -334,7 +335,7 @@ class BarangController extends Controller
             ], 422);
         }
 
-        $cabangId = auth()->user()->cabang_id;
+        $cabangId = Auth::user()->cabang_id;
 
         $stok = StokCabang::updateOrCreate(
             [
@@ -435,5 +436,58 @@ class BarangController extends Controller
                 'total' => $barang->total(),
             ],
         ]);
+    }
+
+    /**
+     * Get stock data for a specific product for all branches (AJAX)
+     */
+    public function getStokData($barang_id)
+    {
+        $stok = StokCabang::where('barang_id', $barang_id)
+            ->get()
+            ->keyBy('cabang_id');
+            
+        return response()->json([
+            'success' => true,
+            'data' => $stok
+        ]);
+    }
+
+    /**
+     * Batch update stok untuk beberapa cabang sekaligus (Supervisor/Super Admin)
+     */
+    public function batchUpdateStok(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user->hasRole('super_admin') && !$user->hasRole('supervisor')) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk fitur ini.');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'barang_id' => 'required|exists:barang,id',
+            'updates' => 'required|array',
+            'updates.*.cabang_id' => 'required|exists:cabang,id',
+            'updates.*.jumlah_stok' => 'required|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->with('error', 'Validasi gagal: ' . $validator->errors()->first());
+        }
+
+        foreach ($request->updates as $update) {
+            StokCabang::updateOrCreate(
+                [
+                    'barang_id' => $request->barang_id,
+                    'cabang_id' => $update['cabang_id'],
+                ],
+                [
+                    'jumlah_stok' => $update['jumlah_stok'],
+                ]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Stok berhasil diperbarui untuk ' . count($request->updates) . ' cabang');
     }
 }

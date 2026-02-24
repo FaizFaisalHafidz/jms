@@ -126,37 +126,44 @@ class HargaCabangController extends Controller
     {
         $request->validate([
             'barang_id' => 'required|exists:barang,id',
-            'updates' => 'required|array',
-            'updates.*.cabang_id' => 'required|exists:cabang,id',
+            'harga_asal' => 'nullable|integer|min:0',
+            'updates' => 'nullable|array',
+            'updates.*.cabang_id' => 'required_with:updates|exists:cabang,id',
             'updates.*.harga_konsumen' => 'nullable|integer|min:0',
             'updates.*.harga_konter' => 'nullable|integer|min:0',
             'updates.*.harga_partai' => 'nullable|integer|min:0',
         ]);
 
-        foreach ($request->updates as $update) {
-            // Skip jika semua harga null
-            if (
-                $update['harga_konsumen'] === null &&
-                $update['harga_konter'] === null &&
-                $update['harga_partai'] === null
-            ) {
-                continue;
-            }
-
-            HargaCabang::updateOrCreate(
-                [
-                    'barang_id' => $request->barang_id,
-                    'cabang_id' => $update['cabang_id'],
-                ],
-                [
-                    'harga_konsumen' => $update['harga_konsumen'],
-                    'harga_konter' => $update['harga_konter'],
-                    'harga_partai' => $update['harga_partai'],
-                ]
-            );
+        if ($request->has('harga_asal')) {
+            Barang::where('id', $request->barang_id)->update(['harga_asal' => $request->harga_asal]);
         }
 
-        return back()->with('success', 'Harga berhasil diupdate untuk ' . count($request->updates) . ' cabang');
+        if ($request->has('updates') && is_array($request->updates)) {
+            foreach ($request->updates as $update) {
+                // Skip jika semua harga null
+                if (
+                    $update['harga_konsumen'] === null &&
+                    $update['harga_konter'] === null &&
+                    $update['harga_partai'] === null
+                ) {
+                    continue;
+                }
+
+                HargaCabang::updateOrCreate(
+                    [
+                        'barang_id' => $request->barang_id,
+                        'cabang_id' => $update['cabang_id'],
+                    ],
+                    [
+                        'harga_konsumen' => $update['harga_konsumen'],
+                        'harga_konter' => $update['harga_konter'],
+                        'harga_partai' => $update['harga_partai'],
+                    ]
+                );
+            }
+        }
+
+        return back()->with('success', 'Harga berhasil diupdate');
     }
 
     /**
@@ -174,5 +181,20 @@ class HargaCabangController extends Controller
             ->delete();
 
         return back()->with('success', 'Harga dikembalikan ke default');
+    }
+
+    /**
+     * Get custom prices for a specific product (AJAX)
+     */
+    public function getHargaData($barang_id)
+    {
+        $hargaCustom = HargaCabang::where('barang_id', $barang_id)
+            ->get()
+            ->keyBy('cabang_id');
+            
+        return response()->json([
+            'success' => true,
+            'data' => $hargaCustom
+        ]);
     }
 }

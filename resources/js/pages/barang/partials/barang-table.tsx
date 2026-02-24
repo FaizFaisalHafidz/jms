@@ -35,7 +35,7 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import axios from 'axios';
-import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUpDown, Box, DollarSign, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -83,7 +83,10 @@ interface BarangTableProps {
     barang: Barang[];
     kategori: KategoriBarang[];
     onEdit: (barang: Barang) => void;
+    onEditHargaCabang?: (barang: Barang) => void;
+    onEditStokCabang?: (barang: Barang) => void;
     can_manage_stock?: boolean;
+    hideStokColumn?: boolean;
     pagination?: {
         current_page: number;
         from: number | null;
@@ -99,7 +102,7 @@ interface BarangTableProps {
     };
 }
 
-export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manage_stock = true, pagination: initialPagination, filters }: BarangTableProps) {
+export function BarangTable({ barang: initialBarang, kategori, onEdit, onEditHargaCabang, onEditStokCabang, can_manage_stock = true, hideStokColumn = false, pagination: initialPagination, filters }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
     const [stokValue, setStokValue] = useState<number>(0);
@@ -217,7 +220,7 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
         }).format(value);
     };
 
-    const columns: ColumnDef<Barang>[] = [
+    const baseColumns: ColumnDef<Barang>[] = [
         {
             accessorKey: 'kode_barang',
             header: ({ column }) => {
@@ -352,11 +355,10 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
                                 onClick={() =>
                                     can_manage_stock && handleEditStok(barang.id, currentStok)
                                 }
-                                className={`text-sm font-medium px-2 py-1 rounded ${
-                                    can_manage_stock 
-                                        ? 'hover:underline hover:bg-gray-100 cursor-pointer' 
-                                        : 'cursor-not-allowed opacity-60'
-                                }`}
+                                className={`text-sm font-medium px-2 py-1 rounded ${can_manage_stock
+                                    ? 'hover:underline hover:bg-gray-100 cursor-pointer'
+                                    : 'cursor-not-allowed opacity-60'
+                                    }`}
                                 disabled={!can_manage_stock}
                                 title={!can_manage_stock ? 'Cabang Anda tidak memiliki izin untuk mengelola stok' : ''}
                             >
@@ -385,6 +387,18 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
                                 <Pencil className="mr-2 h-4 w-4" />
                                 Edit
                             </DropdownMenuItem>
+                            {onEditStokCabang && (
+                                <DropdownMenuItem onClick={() => onEditStokCabang(barang)}>
+                                    <Box className="mr-2 h-4 w-4" />
+                                    Edit Stok Cabang
+                                </DropdownMenuItem>
+                            )}
+                            {onEditHargaCabang && (
+                                <DropdownMenuItem onClick={() => onEditHargaCabang(barang)}>
+                                    <DollarSign className="mr-2 h-4 w-4" />
+                                    Edit Harga Cabang
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem
                                 onClick={() => handleDelete(barang)}
                                 className="text-red-600"
@@ -398,6 +412,8 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, can_manag
             },
         },
     ];
+
+    const columns = hideStokColumn ? baseColumns.filter(col => col.id !== 'stok') : baseColumns;
 
     const table = useReactTable({
         data: barangData,

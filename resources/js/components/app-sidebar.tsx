@@ -218,6 +218,11 @@ export function AppSidebar() {
     // Menu untuk Supervisor
     const supervisorMenu: NavItem[] = [
         {
+            title: 'Barang',
+            href: '/barang',
+            icon: Package,
+        },
+        {
             title: 'Permission Stok',
             href: '/super-admin/stock-permission',
             icon: Lock,

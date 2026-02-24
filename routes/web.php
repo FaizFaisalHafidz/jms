@@ -41,6 +41,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('harga-cabang/update', [\App\Http\Controllers\HargaCabangController::class, 'update'])->name('harga-cabang.update');
         Route::post('harga-cabang/batch', [\App\Http\Controllers\HargaCabangController::class, 'batchUpdate'])->name('harga-cabang.batch');
         Route::post('harga-cabang/reset', [\App\Http\Controllers\HargaCabangController::class, 'reset'])->name('harga-cabang.reset');
+        Route::get('harga-cabang/{barang_id}/data', [\App\Http\Controllers\HargaCabangController::class, 'getHargaData'])->name('harga-cabang.data');
+        
+        // Stok Cabang Management by Supervisor
+        Route::get('stok-cabang/{barang_id}/data', [\App\Http\Controllers\BarangController::class, 'getStokData'])->name('stok-cabang.data');
+        Route::post('stok-cabang/batch', [\App\Http\Controllers\BarangController::class, 'batchUpdateStok'])->name('stok-cabang.batch');
     });
     
     // User Routes
