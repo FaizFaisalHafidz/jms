@@ -67,7 +67,7 @@ class BarangController extends Controller
         }
         
         // Pagination
-        $barang = $query->orderBy('nama_barang')->paginate(15);
+        $barang = $query->orderBy('nama_barang')->paginate(10);
         
         // Transform data to use harga per cabang untuk semua user yang punya cabang_id
         if ($user->cabang_id) {
@@ -115,14 +115,24 @@ class BarangController extends Controller
         $canManageStock = $isSuperAdmin || ($user->cabang && $user->cabang->can_manage_stock);
 
         return Inertia::render('barang/index', [
-            'barang' => $barang,
+            'barang' => [
+                'data' => $barang->items(),
+                'meta' => [
+                    'current_page' => $barang->currentPage(),
+                    'from' => $barang->firstItem(),
+                    'last_page' => $barang->lastPage(),
+                    'per_page' => $barang->perPage(),
+                    'to' => $barang->lastItem(),
+                    'total' => $barang->total(),
+                ],
+            ],
             'kategori' => $kategori,
             'suplier' => $suplier,
             'cabang' => $cabang,
             'is_super_admin' => $isSuperAdmin,
             'can_manage_stock' => $canManageStock,
             'filters' => $request->only(['search', 'kategori_id', 'status']),
-            'timestamp' => now()->timestamp, // Force fresh data
+            'timestamp' => now()->timestamp,
             'stats' => [
                 'total' => (int)$stats->total,
                 'aktif' => (int)$stats->aktif,
@@ -361,6 +371,7 @@ class BarangController extends Controller
     {
         $user = Auth::user();
         $isSuperAdmin = $user->hasRole('super_admin');
+        $isSupervisor = $user->hasRole('supervisor');
         
         // Build query dengan pagination dan filtering
         $query = Barang::query()
@@ -373,8 +384,8 @@ class BarangController extends Controller
             ->with([
                 'kategori:id,nama_kategori',
                 'suplier:id,nama_suplier',
-                'stokCabang' => function ($query) use ($isSuperAdmin, $user) {
-                    if (!$isSuperAdmin) {
+                'stokCabang' => function ($query) use ($isSuperAdmin, $isSupervisor, $user) {
+                    if (!$isSuperAdmin && !$isSupervisor) {
                         $query->where('cabang_id', $user->cabang_id);
                     }
                     $query->select('id', 'barang_id', 'cabang_id', 'jumlah_stok')
@@ -406,7 +417,7 @@ class BarangController extends Controller
         }
         
         // Pagination
-        $barang = $query->orderBy('nama_barang')->paginate(15);
+        $barang = $query->orderBy('nama_barang')->paginate(10);
         
         // Transform data to use harga per cabang untuk semua user yang punya cabang_id
         if ($user->cabang_id) {
