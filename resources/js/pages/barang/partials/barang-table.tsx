@@ -49,11 +49,17 @@ interface Suplier {
     nama_suplier: string;
 }
 
+interface Cabang {
+    id: number;
+    nama_cabang: string;
+}
+
 interface StokCabang {
     id: number;
     barang_id: number;
     cabang_id: number;
     jumlah_stok: number;
+    cabang?: Cabang;
 }
 
 interface Barang {
@@ -86,7 +92,7 @@ interface BarangTableProps {
     onEditHargaCabang?: (barang: Barang) => void;
     onEditStokCabang?: (barang: Barang) => void;
     can_manage_stock?: boolean;
-    hideStokColumn?: boolean;
+    cabangs?: Cabang[];
     pagination?: {
         current_page: number;
         from: number | null;
@@ -102,7 +108,26 @@ interface BarangTableProps {
     };
 }
 
-export function BarangTable({ barang: initialBarang, kategori, onEdit, onEditHargaCabang, onEditStokCabang, can_manage_stock = true, hideStokColumn = false, pagination: initialPagination, filters }: BarangTableProps) {
+// Helper: abbreviate branch name for column header
+function abbreviateCabang(name: string): string {
+    // Remove text in parentheses e.g. "Katapang(BANDUNG)" -> "Katapang"
+    const cleaned = name.replace(/\([^)]*\)/g, '').trim();
+    const words = cleaned.split(/\s+/);
+    if (words.length > 1) {
+        // Multiple words: e.g. "Tasik BKR" -> "BKR", "Tasik Mitrabatik" -> "MB" (initials of last word first 2 chars)
+        const lastWord = words[words.length - 1];
+        if (lastWord.length <= 4) return lastWord.toUpperCase();
+        // Long compound word like "Mitrabatik" → split in half → "Mitra"+"batik" → "MB"
+        const mid = Math.ceil(lastWord.length / 2);
+        return (lastWord[0] + lastWord[mid]).toUpperCase();
+    }
+    // Single word: take first 3 consonants-ish
+    const consonants = cleaned.replace(/[aeiouAEIOU]/g, '');
+    if (consonants.length >= 3) return consonants.substring(0, 3).toUpperCase();
+    return cleaned.substring(0, 3).toUpperCase();
+}
+
+export function BarangTable({ barang: initialBarang, kategori, onEdit, onEditHargaCabang, onEditStokCabang, can_manage_stock = true, cabangs = [], pagination: initialPagination, filters }: BarangTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [editingStok, setEditingStok] = useState<number | null>(null);
     const [stokValue, setStokValue] = useState<number>(0);
@@ -309,11 +334,22 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, onEditHar
                 );
             },
         },
-        {
+        // Dynamic per-branch stok columns (for supervisor/super admin)
+        ...(cabangs.length > 0 ? cabangs.map((cabang) => ({
+            id: `stok_cabang_${cabang.id}`,
+            header: `QTY ${abbreviateCabang(cabang.nama_cabang)}`,
+            cell: ({ row }: { row: any }) => {
+                const barang = row.original as Barang;
+                const stok = barang.stok_cabang?.find(s => s.cabang_id === cabang.id);
+                return (
+                    <span className="text-sm font-medium">{stok?.jumlah_stok || 0}</span>
+                );
+            },
+        } as ColumnDef<Barang>)) : [{
             id: 'stok',
             header: 'Stok',
-            cell: ({ row }) => {
-                const barang = row.original;
+            cell: ({ row }: { row: any }) => {
+                const barang = row.original as Barang;
                 const currentStok = getStok(barang);
                 const isEditing = editingStok === barang.id;
 
@@ -368,7 +404,7 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, onEditHar
                     </div>
                 );
             },
-        },
+        } as ColumnDef<Barang>]),
         {
             id: 'actions',
             cell: ({ row }) => {
@@ -413,7 +449,7 @@ export function BarangTable({ barang: initialBarang, kategori, onEdit, onEditHar
         },
     ];
 
-    const columns = hideStokColumn ? baseColumns.filter(col => col.id !== 'stok') : baseColumns;
+    const columns = baseColumns;
 
     const table = useReactTable({
         data: barangData,

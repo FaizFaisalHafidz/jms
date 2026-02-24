@@ -34,8 +34,8 @@ class BarangController extends Controller
             ->with([
                 'kategori:id,nama_kategori',
                 'suplier:id,nama_suplier',
-                'stokCabang' => function ($query) use ($isSuperAdmin, $user) {
-                    if (!$isSuperAdmin) {
+                'stokCabang' => function ($query) use ($isSuperAdmin, $isSupervisor, $user) {
+                    if (!$isSuperAdmin && !$isSupervisor) {
                         $query->where('cabang_id', $user->cabang_id);
                     }
                     $query->select('id', 'barang_id', 'cabang_id', 'jumlah_stok')

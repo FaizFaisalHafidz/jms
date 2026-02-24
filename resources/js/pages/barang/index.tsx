@@ -211,7 +211,7 @@ export default function BarangIndex({
                     onEditHargaCabang={canManageHargaCabang ? handleEditHargaCabang : undefined}
                     onEditStokCabang={canManageHargaCabang ? handleEditStokCabang : undefined}
                     can_manage_stock={can_manage_stock}
-                    hideStokColumn={isSupervisor && !isSuperAdmin}
+                    cabangs={canManageHargaCabang ? (cabang || []) : []}
                     pagination={barang.meta}
                     filters={filters}
                 />
