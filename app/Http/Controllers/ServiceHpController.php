@@ -265,19 +265,22 @@ class ServiceHpController extends Controller
         $serviceHp = ServiceHp::findOrFail($id);
         
         // Check if this is a partial update (e.g., only status change)
-        if ($request->has('status_service') && count($request->all()) === 1) {
+        if ($request->has('status_service') && count($request->except(['_method', '_token'])) === 1) {
             $request->validate([
                 'status_service' => 'required|in:diterima,dicek,dikerjakan,selesai,diambil,batal',
             ]);
             
-            $updateData = ['status_service' => $request->status_service];
+            $newStatus = $request->status_service;
+            $oldStatus = $serviceHp->status_service;
+            
+            $updateData = ['status_service' => $newStatus];
             
             // Auto set tanggal_selesai if status is 'selesai' and not set
-            if ($request->status_service === 'selesai' && !$serviceHp->tanggal_selesai) {
+            if ($newStatus === 'selesai' && !$serviceHp->tanggal_selesai) {
                 $updateData['tanggal_selesai'] = now();
             }
             // Auto set tanggal_diambil if status is 'diambil' and not set
-            if ($request->status_service === 'diambil' && !$serviceHp->tanggal_diambil) {
+            if ($newStatus === 'diambil' && !$serviceHp->tanggal_diambil) {
                 $updateData['tanggal_diambil'] = now();
                 // Ensure tanggal_selesai is also set if it was missed
                 if (!$serviceHp->tanggal_selesai) {
@@ -285,17 +288,52 @@ class ServiceHpController extends Controller
                 }
             }
 
-            $serviceHp->update($updateData);
-            
-            if ($request->wantsJson() || $request->expectsJson()) {
+            DB::beginTransaction();
+            try {
+                if ($oldStatus !== 'batal' && $newStatus === 'batal') {
+                    if ($serviceHp->barang_id && $serviceHp->jumlah_barang) {
+                        $stokCabang = StokCabang::where('cabang_id', Auth::user()->cabang_id)
+                            ->where('barang_id', $serviceHp->barang_id)
+                            ->first();
+                        if ($stokCabang) {
+                            $stokCabang->increment('jumlah_stok', $serviceHp->jumlah_barang);
+                        }
+                    }
+                } elseif ($oldStatus === 'batal' && $newStatus !== 'batal') {
+                    if ($serviceHp->barang_id && $serviceHp->jumlah_barang) {
+                        $stokCabang = StokCabang::where('cabang_id', Auth::user()->cabang_id)
+                            ->where('barang_id', $serviceHp->barang_id)
+                            ->first();
+                        if (!$stokCabang || $stokCabang->jumlah_stok < $serviceHp->jumlah_barang) {
+                            DB::rollBack();
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Stok barang tidak mencukupi untuk update status',
+                            ], 400);
+                        }
+                        $stokCabang->decrement('jumlah_stok', $serviceHp->jumlah_barang);
+                    }
+                }
+
+                $serviceHp->update($updateData);
+                DB::commit();
+                
+                if ($request->wantsJson() || $request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Status berhasil diubah',
+                    ]);
+                }
+                
+                return redirect()->route('service.index')
+                    ->with('success', 'Status berhasil diubah');
+            } catch (\Exception $e) {
+                DB::rollBack();
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Status berhasil diubah',
-                ]);
+                    'success' => false,
+                    'message' => 'Gagal mengubah status: ' . $e->getMessage()
+                ], 500);
             }
-            
-            return redirect()->route('service.index')
-                ->with('success', 'Status berhasil diubah');
         }
         
         // Full update validation
@@ -328,11 +366,14 @@ class ServiceHpController extends Controller
             // Handle stok changes jika barang berubah
             $oldBarangId = $serviceHp->barang_id;
             $oldJumlah = $serviceHp->jumlah_barang;
+            $oldStatus = $serviceHp->status_service;
             $newBarangId = $request->barang_id;
             $newJumlah = $request->jumlah_barang;
+            $newStatus = $request->status_service;
 
-            // Restore stok lama jika ada
-            if ($oldBarangId && $oldJumlah) {
+            // Restore stok lama jika ada dan status sebelumnya BUKAN batal
+            // Karena jika batal, stok sudah direstore
+            if ($oldStatus !== 'batal' && $oldBarangId && $oldJumlah) {
                 $oldStok = StokCabang::where('cabang_id', $cabangId)
                     ->where('barang_id', $oldBarangId)
                     ->first();
@@ -342,8 +383,8 @@ class ServiceHpController extends Controller
                 }
             }
 
-            // Kurangi stok baru jika ada
-            if ($newBarangId && $newJumlah) {
+            // Kurangi stok baru jika ada dan status baru BUKAN batal
+            if ($newStatus !== 'batal' && $newBarangId && $newJumlah) {
                 $newStok = StokCabang::where('cabang_id', $cabangId)
                     ->where('barang_id', $newBarangId)
                     ->first();
@@ -409,8 +450,9 @@ class ServiceHpController extends Controller
             $serviceHp = ServiceHp::findOrFail($id);
             $cabangId = Auth::user()->cabang_id;
 
-            // Restore stok jika service ini pakai barang dari inventory
-            if ($serviceHp->barang_id && $serviceHp->jumlah_barang) {
+            // Restore stok jika service ini pakai barang dari inventory dan statusnya BUKAN batal
+            // karena jika batal, stok sudah direstore sebelumnya
+            if ($serviceHp->status_service !== 'batal' && $serviceHp->barang_id && $serviceHp->jumlah_barang) {
                 $stokCabang = StokCabang::where('cabang_id', $cabangId)
                     ->where('barang_id', $serviceHp->barang_id)
                     ->first();
