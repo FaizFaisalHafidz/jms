@@ -37,6 +37,8 @@ interface Service {
     tanggal_diambil: string | null;
     keterangan: string | null;
     metode_pembayaran: string;
+    barang_id: number | null;
+    jumlah_barang: number | null;
 }
 
 interface Teknisi {
@@ -68,6 +70,8 @@ export default function ServiceHpEdit({ service, teknisi }: Props) {
         tanggal_diambil: service.tanggal_diambil?.slice(0, 16) || '',
         keterangan: service.keterangan || '',
         metode_pembayaran: service.metode_pembayaran || 'tunai',
+        barang_id: service.barang_id || null,
+        jumlah_barang: service.jumlah_barang || null,
     });
 
     const handleSubmit: FormEventHandler = (e) => {
